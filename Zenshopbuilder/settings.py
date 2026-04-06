@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "debug_toolbar",
     'djoser',
     'drf_yasg',
+    'products',
 ]
 
 MIDDLEWARE = [
