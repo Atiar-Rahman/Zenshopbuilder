@@ -7,5 +7,7 @@ from api.views import Home
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api-auth/", include("rest_framework.urls")),
-    path('',Home)
+    path('',Home),
+    path('auth/',include('djoser.urls')),
+    path('auth/',include('djoser.urls.jwt')),
 ] + debug_toolbar_urls()
