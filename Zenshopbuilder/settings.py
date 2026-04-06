@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'api',
     "debug_toolbar",
     'djoser',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -145,5 +146,16 @@ DJOSER = {
         'user_create': 'users.serializers.UserCreateSerializer',
         'user': 'users.serializers.UserSerializer',
         'current_user': 'users.serializers.UserSerializer',
+    }
+}
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+            'description': 'Enter your JWT token in the format: `JWT <your_token>`'
+        }
     }
 }
