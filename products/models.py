@@ -1,11 +1,14 @@
-import uuid
+
 from django.db import models, transaction
 from django.utils.text import slugify
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
+from users.models import Company
+from core.models import SoftDeleteModel
+from django.db import IntegrityError
 
 
-class Category(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+class Category(SoftDeleteModel):
 
     name = models.CharField(max_length=200, db_index=True)
     slug = models.SlugField(max_length=220, unique=True, db_index=True, blank=True)
@@ -20,15 +23,11 @@ class Category(models.Model):
 
     description = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='categories/', blank=True, null=True)
-
     is_active = models.BooleanField(default=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         indexes = [
-            models.Index(fields=['name']),
+            models.Index(fields=['is_active']),
         ]
 
     # cyclic category prevent
@@ -41,33 +40,35 @@ class Category(models.Model):
 
     # race-condition safe slug
     def save(self, *args, **kwargs):
+        self.full_clean() # call clean method
         if not self.slug:
             base_slug = slugify(self.name)
-
-            for i in range(10):
-                slug = base_slug if i == 0 else f"{base_slug}-{i}"
-                if not Category.objects.filter(slug=slug).exists():
+            slug = base_slug
+            n = 1
+            while True:
+                try:
                     self.slug = slug
+                    super().save(*args, **kwargs)
                     break
-
-        super().save(*args, **kwargs)
+                except IntegrityError:
+                    slug = f"{base_slug}-{n}"
+                    n += 1
 
     def __str__(self):
         return self.name
     
+class TechStack(SoftDeleteModel):
+    name = models.CharField(max_length=50, unique=True)
 
-from django.core.validators import MinValueValidator
-from users.models import Company
+    def __str__(self):
+        return self.name
 
 
-class Product(models.Model):
+class Product(SoftDeleteModel):
 
-    STATUS = [
-        ('draft', 'Draft'),
-        ('published', 'Published'),
-    ]
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    class Status(models.TextChoices):
+        DRAFT = 'draft', 'Draft'
+        PUBLISHED = 'published', 'Published'
 
     company = models.ForeignKey(
         Company,
@@ -84,15 +85,19 @@ class Product(models.Model):
         related_name='products'
     )
 
-    short_description = models.CharField(max_length=300, blank=True, null=True)
+    short_description = models.CharField(max_length=300, blank=True)
     description = models.TextField(blank=True, null=True)
 
     thumbnail = models.ImageField(upload_to='products/thumbnails/', null=True, blank=True)
 
     live_preview_url = models.URLField(blank=True, null=True)
-    tech_stack = models.CharField(max_length=200, blank=True, null=True)
+    tech_stack = models.ManyToManyField(
+        TechStack,
+        blank=True,
+        related_name='projects'
+    )
 
-    status = models.CharField(max_length=20, choices=STATUS, default='draft')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     is_active = models.BooleanField(default=True)
 
     total_sales = models.PositiveIntegerField(default=0)
@@ -101,52 +106,44 @@ class Product(models.Model):
     rating = models.FloatField(default=0)
     total_reviews = models.PositiveIntegerField(default=0)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         indexes = [
             models.Index(fields=['status', 'is_active']),
         ]
-
+        
     #slug safe
     def save(self, *args, **kwargs):
         if not self.slug:
             base_slug = slugify(self.name)
-
-            for i in range(10):
-                slug = base_slug if i == 0 else f"{base_slug}-{i}"
-                if not Product.objects.filter(slug=slug).exists():
-                    self.slug = slug
-                    break
-
+            slug = base_slug
+            n = 1
+            while Product.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{n}"
+                n += 1
+            self.slug = slug
         super().save(*args, **kwargs)
 
-    # rating auto update
     def update_rating(self):
-        reviews = self.reviews.all()
+        reviews = self.product.reviews.all()  # all reviews of this product
         total = reviews.count()
-
         if total == 0:
-            self.rating = 0
-            self.total_reviews = 0
+            self.product.rating = 0
+            self.product.total_reviews = 0
         else:
-            self.rating = sum(r.rating for r in reviews) / total
-            self.total_reviews = total
+            self.product.rating = sum(r.rating for r in reviews) / total
+            self.product.total_reviews = total
+        self.product.save(update_fields=['rating', 'total_reviews'])
+    
 
-        self.save(update_fields=['rating', 'total_reviews'])
-
-    def __str__(self):
-        return self.name
-
-class ProductVersion(models.Model):
+class ProductVersion(SoftDeleteModel):
+    REGULAR = 'regular'
+    EXTENDED = 'extended'
 
     LICENSE_TYPES = [
-        ('regular', 'Regular License'),
-        ('extended', 'Extended License'),
+        (REGULAR, 'Regular License'),
+        (EXTENDED, 'Extended License'),
     ]
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     product = models.ForeignKey(
         Product,
@@ -160,7 +157,7 @@ class ProductVersion(models.Model):
     price = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)])
     discount_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
-    file = models.FileField(upload_to='products/files/')
+    file = models.FileField(upload_to='products/files/',null=True,blank=True)
 
     release_date = models.DateField(blank=True, null=True)
     changelog = models.TextField(blank=True, null=True)
@@ -171,18 +168,23 @@ class ProductVersion(models.Model):
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
 
-    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('product', 'version', 'license_type')
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['is_active', 'is_featured']),
+            models.Index(fields=['is_active', 'is_featured','version']),
         ]
 
+    # validation discout price
     def clean(self):
         if self.discount_price and self.discount_price > self.price:
             raise ValidationError("Discount price cannot be greater than price")
+        
+    def save(self, *args, **kwargs):
+        self.full_clean()  # clean() call
+        super().save(*args, **kwargs)
+
 
     def __str__(self):
         return f"{self.product.name} v{self.version} ({self.license_type})"
@@ -190,8 +192,7 @@ class ProductVersion(models.Model):
 
 
 
-class ProductImage(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+class ProductImage(SoftDeleteModel):
 
     product = models.ForeignKey(
         Product,
@@ -202,7 +203,6 @@ class ProductImage(models.Model):
     image = models.ImageField(upload_to='products/images/')
     is_main = models.BooleanField(default=False)
 
-    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [

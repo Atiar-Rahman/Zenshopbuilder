@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'djoser',
     'drf_yasg',
     'products',
+    'core'
 ]
 
 MIDDLEWARE = [
