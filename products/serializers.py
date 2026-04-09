@@ -222,3 +222,20 @@ class ProductSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+
+class ProductVersionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductVersion
+        fields = [
+            'id', 'product', 'version', 'license_type', 'price', 'discount_price',
+            'file', 'release_date', 'changelog', 'docs_url', 'download_count',
+            'is_active', 'is_featured', 'is_deleted', 'created_by', 'deleted_by', 'deleted_at'
+        ]
+        read_only_fields = ['id', 'download_count', 'created_by', 'deleted_by', 'deleted_at']
+
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = ['id', 'product', 'image', 'is_main', 'is_deleted', 'created_by', 'deleted_by', 'deleted_at']
+        read_only_fields = ['id', 'created_by', 'deleted_by', 'deleted_at']

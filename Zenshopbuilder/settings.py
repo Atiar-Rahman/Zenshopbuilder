@@ -1,4 +1,4 @@
-
+import os
 
 from pathlib import Path
 from datetime import timedelta
@@ -117,6 +117,9 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 
+# Media files
+MEDIA_URL = '/media/'       # URL path to access media
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # filesystem path to store uploaded files
 
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
