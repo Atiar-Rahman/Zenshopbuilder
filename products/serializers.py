@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from products.models import Category,Product,ProductImage,ProductVersion,TechStack,Tag
-
+from users.serializers import CompanySerializer
 
 class CategorySerializer(serializers.ModelSerializer):
     parent_id = serializers.PrimaryKeyRelatedField(
@@ -132,4 +132,93 @@ class TagSerializer(serializers.ModelSerializer):
             created_by=user,
             **validated_data
         )
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    tech_stack = serializers.PrimaryKeyRelatedField(
+        queryset=TechStack.objects.filter(is_deleted=False),
+        many=True,
+        required=False
+    )
+    tags = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.filter(is_deleted=False),
+        many=True,
+        required=False
+    )
+    # Read using names
+    tech_stack_names = serializers.StringRelatedField(
+        source='tech_stack',
+        many=True,
+        read_only=True
+    )
+    tag_names = serializers.StringRelatedField(
+        source='tags',
+        many=True,
+        read_only=True
+    )
+    # Category name instead of ID
+    category_name = serializers.CharField(
+        source='category.name',
+        read_only=True
+    )
+
+    class Meta:
+        model = Product
+        fields = [
+            'id', 'name', 'slug', 'short_description', 'description',
+            'thumbnail', 'live_preview_url', 'status', 'is_active',
+            'total_sales', 'total_views', 'rating', 'total_reviews',
+            'category', 'category_name',  # ID for write, name for read
+            'tech_stack', 'tech_stack_names',
+            'tags', 'tag_names'
+        ]
+        read_only_fields = [
+            'id','slug','deleted_by','created_by','created_at','deleted_at',
+            'total_sales','total_views','rating','total_reviews',
+            'category_name','tech_stack_names','tag_names'
+        ]
+
+    def create(self, validated_data):
+        tech_stack_data = validated_data.pop('tech_stack', [])
+        tags_data = validated_data.pop('tags', [])
+
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+
+        if not user or not user.is_authenticated:
+            user = None
+
+        category_id = self.context.get('category_id')
+        if not category_id:
+            raise serializers.ValidationError("Category is required")
+
+        product = Product.objects.create(
+            created_by=user,
+            category_id=category_id,
+            **validated_data
+        )
+
+        if tech_stack_data:
+            product.tech_stack.set(tech_stack_data)
+
+        if tags_data:
+            product.tags.set(tags_data)
+
+        return product
+
+    def update(self, instance, validated_data):
+        tech_stack_data = validated_data.pop('tech_stack', None)
+        tags_data = validated_data.pop('tags', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if tech_stack_data is not None:
+            instance.tech_stack.set(tech_stack_data)
+
+        if tags_data is not None:
+            instance.tags.set(tags_data)
+
+        instance.save()
+        return instance
 
