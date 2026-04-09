@@ -8,6 +8,7 @@ class CategoryViewSet(ModelViewSet):
     queryset = Category.active_objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated]
+    lookup_field='slug'
 
     def get_serializer_context(self):
         # Pass request for created_by

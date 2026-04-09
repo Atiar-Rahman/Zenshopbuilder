@@ -69,6 +69,9 @@ class CategorySerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = getattr(request, 'user', None)
 
+        if not user or not user.is_authenticated:
+            user = None
+        
         # remove slug if sent from client
         validated_data.pop('slug', None)
 

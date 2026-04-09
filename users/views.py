@@ -14,7 +14,11 @@ class UserProfileViewset(ModelViewSet):
 
 
     def get_queryset(self):
-        return Profile.objects.filter(user=self.request.user)
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            # Swagger reload or anonymous access → return empty queryset
+            return Profile.objects.none()
+        return Profile.objects.filter(user=user)
     
 
 
@@ -23,7 +27,11 @@ class ProfileViewSet(ModelViewSet):
     serializer_class = UserProfoleSerializer
 
     def get_queryset(self):
-        return Profile.objects.filter(company_id=self.kwargs['company_pk'])
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            # Swagger reload or anonymous access → return empty queryset
+            return Profile.objects.none()
+        return Profile.objects.filter(user=user)
 
     def perform_create(self, serializer):
-        serializer.save(company_id=self.kwargs['company_pk'])
+        serializer.save(company_id=self.kwargs.get('company_pk'))
