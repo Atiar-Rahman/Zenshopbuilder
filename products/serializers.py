@@ -109,8 +109,27 @@ class TechStackSerializer(serializers.ModelSerializer):
         if not user or not user.is_authenticated:
             user = None
             
-        return Category.objects.create(
+        return TechStack.objects.create(
             created_by=user,
             **validated_data
         )
     
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag 
+        fields = ['id','name','is_deleted','created_by','deleted_by','deleted_at','created_at']
+        read_only_fields = ['id','created_by','deleted_by','created_at','deleted_at']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+
+        if not user or not user.is_authenticated:
+            user = None
+            
+        return Tag.objects.create(
+            created_by=user,
+            **validated_data
+        )
+
