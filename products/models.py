@@ -63,6 +63,11 @@ class TechStack(SoftDeleteModel):
     def __str__(self):
         return self.name
 
+class Tag(SoftDeleteModel):
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.name
 
 class Product(SoftDeleteModel):
 
@@ -94,7 +99,7 @@ class Product(SoftDeleteModel):
     tech_stack = models.ManyToManyField(
         TechStack,
         blank=True,
-        related_name='projects'
+        related_name='products'
     )
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
@@ -105,6 +110,7 @@ class Product(SoftDeleteModel):
 
     rating = models.FloatField(default=0)
     total_reviews = models.PositiveIntegerField(default=0)
+    tags = models.ManyToManyField(Tag, blank=True, related_name='products')
 
 
     class Meta:
