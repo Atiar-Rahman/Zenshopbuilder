@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from products.models import Category
+from products.models import Category,Product,ProductImage,ProductVersion,TechStack,Tag
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -95,4 +95,22 @@ class CategorySerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+    
+class TechStackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TechStack
+        fields = ['id','name','is_deleted','created_by','deleted_by','deleted_at','created_at']
+        read_only_fields = ['id','created_by','deleted_by','created_at','deleted_at']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+
+        if not user or not user.is_authenticated:
+            user = None
+            
+        return Category.objects.create(
+            created_by=user,
+            **validated_data
+        )
     

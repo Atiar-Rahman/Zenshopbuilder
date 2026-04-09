@@ -1,7 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
-from products.models import Category
-from products.serializers import CategorySerializer
+from products.models import Category,ProductImage,TechStack,Tag
+from products.serializers import CategorySerializer,TechStackSerializer
 
 class CategoryViewSet(ModelViewSet):
     # use active_objects manager for listing
@@ -15,3 +15,16 @@ class CategoryViewSet(ModelViewSet):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+    
+class TachStackViewSet(ModelViewSet):
+    queryset = TechStack.active_objects.all()
+    serializer_class = TechStackSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_context(self):
+        # Pass request for created_by
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+
