@@ -133,8 +133,58 @@ class TagSerializer(serializers.ModelSerializer):
             **validated_data
         )
 
+class ProductVersionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductVersion
+        fields = [
+            'id', 'version', 'license_type', 'price', 'discount_price',
+            'file', 'release_date', 'changelog', 'docs_url', 'download_count',
+            'is_active', 'is_featured', 'is_deleted', 'created_by', 'deleted_by', 'deleted_at','product'
+        ]
+        read_only_fields = ['id', 'download_count', 'created_by', 'deleted_by', 'deleted_at']
+
+    def create(self,validated_data):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+
+        product_id = self.context.get('product_id')
+
+        if not product_id:
+            raise serializers.ValidationError({'message':'product_id not found'})
+        
+        product_version = ProductVersion.objects.create(
+            created_by = user,
+            product_id = product_id,
+            **validated_data
+        )
+        return product_version
+
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = ['id', 'product', 'image', 'is_main', 'is_deleted', 'created_by', 'deleted_by', 'deleted_at']
+        read_only_fields = ['id', 'created_by', 'deleted_by', 'deleted_at']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        product_id = self.context.get('product_id')
+
+        if not product_id:
+            raise serializers.ValidationError({'message':'product slug must be set'})
+        
+        product_image = ProductImage.objects.create(
+            created_by=request.user,
+            product_id=product_id,
+            **validated_data
+        )
+
+        return product_image
 
 class ProductSerializer(serializers.ModelSerializer):
+    product_image = ProductImageSerializer(source = 'images' ,many=True, read_only=True)
+    product_version = ProductVersionSerializer(source='versions',many=True, read_only=True)
+
     tech_stack = serializers.PrimaryKeyRelatedField(
         queryset=TechStack.objects.filter(is_deleted=False),
         many=True,
@@ -170,12 +220,12 @@ class ProductSerializer(serializers.ModelSerializer):
             'total_sales', 'total_views', 'rating', 'total_reviews',
             'category', 'category_name',  # ID for write, name for read
             'tech_stack', 'tech_stack_names',
-            'tags', 'tag_names'
+            'tags', 'tag_names','product_image','product_version'
         ]
         read_only_fields = [
             'id','slug','deleted_by','created_by','created_at','deleted_at',
             'total_sales','total_views','rating','total_reviews',
-            'category_name','tech_stack_names','tag_names'
+            'category_name','tech_stack_names','tag_names','product_image','product_version'
         ]
 
     def create(self, validated_data):
@@ -223,36 +273,3 @@ class ProductSerializer(serializers.ModelSerializer):
         return instance
 
 
-class ProductVersionSerializer(serializers.ModelSerializer):
-    product = ProductSerializer(read_only=True)
-    class Meta:
-        model = ProductVersion
-        fields = [
-            'id', 'version', 'license_type', 'price', 'discount_price',
-            'file', 'release_date', 'changelog', 'docs_url', 'download_count',
-            'is_active', 'is_featured', 'is_deleted', 'created_by', 'deleted_by', 'deleted_at','product'
-        ]
-        read_only_fields = ['id', 'download_count', 'created_by', 'deleted_by', 'deleted_at']
-
-    def create(self,validated_data):
-        request = self.context.get('request')
-        user = getattr(request, 'user', None)
-
-        product_id = self.context.get('product_id')
-
-        if not product_id:
-            raise serializers.ValidationError({'message':'product_id not found'})
-        
-        product_version = ProductVersion.objects.create(
-            created_by = user,
-            product_id = product_id,
-            **validated_data
-        )
-        return product_version
-
-
-class ProductImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProductImage
-        fields = ['id', 'product', 'image', 'is_main', 'is_deleted', 'created_by', 'deleted_by', 'deleted_at']
-        read_only_fields = ['id', 'created_by', 'deleted_by', 'deleted_at']

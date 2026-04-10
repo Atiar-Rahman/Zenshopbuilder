@@ -2,7 +2,7 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from products.models import Category,ProductImage,TechStack,Tag,Product,ProductVersion
-from products.serializers import CategorySerializer,TechStackSerializer,TagSerializer,ProductSerializer, ProductVersionSerializer
+from products.serializers import CategorySerializer,TechStackSerializer,TagSerializer,ProductSerializer, ProductVersionSerializer,ProductImageSerializer
 
 class CategoryViewSet(ModelViewSet):
     # use active_objects manager for listing
@@ -42,7 +42,7 @@ class TagViewSet(ModelViewSet):
 
 
 class ProductViewSet(ModelViewSet):
-    queryset = Product.active_objects.all()
+    queryset = Product.active_objects.all().prefetch_related('images','versions')
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
     lookup_field= 'slug'
@@ -73,6 +73,16 @@ class ProductVersionViewSet(ModelViewSet):
 
     
 
-     
+class ProductImageViewSet(ModelViewSet):
+    queryset = ProductImage.active_objects.all()
+    serializer_class = ProductImageSerializer
 
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request  # Add request to context
+        product_slug = self.kwargs.get('product_slug')
+        product = Product.active_objects.get(slug=product_slug)
+        context['product_id']=product.id
+        return context
     
