@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from products.models import Category,Product,ProductImage,ProductVersion,TechStack,Tag
+from products.models import Category,Product,ProductImage,ProductVersion,TechStack,Tag,ProductVersionImage
 from users.serializers import CompanySerializer
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -133,15 +133,39 @@ class TagSerializer(serializers.ModelSerializer):
             **validated_data
         )
 
+class ProductVersionImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductVersionImage
+        fields = ['id','product_version','image','caption','created_at','created_by','is_deleted','deleted_at']
+        read_only_fields = ['id','created_at','created_by','is_deleted','deleted_at']
+
+    def create(self,validated_data):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+
+        version_id = self.context.get('version_id')
+
+        if not version_id:
+            raise serializers.ValidationError({'message':'version_id must be needed'})
+        
+        version_images = ProductVersionImage.objects.create(
+            created_by = user,
+            product_version_id = version_id,
+            **validated_data
+        )
+        return version_images
+    
+
 class ProductVersionSerializer(serializers.ModelSerializer):
+    version_image = ProductVersionImageSerializer(source = 'version_images',read_only=True, many=True)
     class Meta:
         model = ProductVersion
         fields = [
             'id', 'version', 'license_type', 'price', 'discount_price',
             'file', 'release_date', 'changelog', 'docs_url', 'download_count',
-            'is_active', 'is_featured', 'is_deleted', 'created_by', 'deleted_by', 'deleted_at','product'
+            'is_active', 'is_featured', 'is_deleted', 'created_by', 'deleted_by', 'deleted_at','product','version_image'
         ]
-        read_only_fields = ['id', 'download_count', 'created_by', 'deleted_by', 'deleted_at']
+        read_only_fields = ['id', 'download_count', 'created_by', 'deleted_by', 'deleted_at','version_image']
 
     def create(self,validated_data):
         request = self.context.get('request')

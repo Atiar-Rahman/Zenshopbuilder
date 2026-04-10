@@ -159,7 +159,7 @@ class ProductVersion(SoftDeleteModel):
 
     version = models.CharField(max_length=50)
     license_type = models.CharField(max_length=20, choices=LICENSE_TYPES)
-
+    slug = models.SlugField(max_length=200, unique=True, db_index=True, blank=True)
     price = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)])
     discount_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
@@ -186,15 +186,36 @@ class ProductVersion(SoftDeleteModel):
     def clean(self):
         if self.discount_price and self.discount_price > self.price:
             raise ValidationError("Discount price cannot be greater than price")
-        
+    #slug safe
     def save(self, *args, **kwargs):
-        self.full_clean()  # clean() call
+        self.full_clean() #call clean
+        if not self.slug:
+            base_slug = slugify(self.version)
+            slug = base_slug
+            n = 1
+            while Product.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{n}"
+                n += 1
+            self.slug = slug
         super().save(*args, **kwargs)
+    
 
 
     def __str__(self):
         return f"{self.product.name} v{self.version} ({self.license_type})"
 
+
+class ProductVersionImage(SoftDeleteModel):
+    product_version = models.ForeignKey(
+        ProductVersion,
+        on_delete=models.CASCADE,
+        related_name='version_images'
+    )
+    image = models.ImageField(upload_to='products/versions/')
+    caption = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.product_version.version
 
 
 
