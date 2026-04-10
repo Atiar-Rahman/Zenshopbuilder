@@ -224,14 +224,31 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class ProductVersionSerializer(serializers.ModelSerializer):
+    product = ProductSerializer(read_only=True)
     class Meta:
         model = ProductVersion
         fields = [
-            'id', 'product', 'version', 'license_type', 'price', 'discount_price',
+            'id', 'version', 'license_type', 'price', 'discount_price',
             'file', 'release_date', 'changelog', 'docs_url', 'download_count',
-            'is_active', 'is_featured', 'is_deleted', 'created_by', 'deleted_by', 'deleted_at'
+            'is_active', 'is_featured', 'is_deleted', 'created_by', 'deleted_by', 'deleted_at','product'
         ]
         read_only_fields = ['id', 'download_count', 'created_by', 'deleted_by', 'deleted_at']
+
+    def create(self,validated_data):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+
+        product_id = self.context.get('product_id')
+
+        if not product_id:
+            raise serializers.ValidationError({'message':'product_id not found'})
+        
+        product_version = ProductVersion.objects.create(
+            created_by = user,
+            product_id = product_id,
+            **validated_data
+        )
+        return product_version
 
 
 class ProductImageSerializer(serializers.ModelSerializer):

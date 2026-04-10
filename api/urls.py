@@ -1,7 +1,7 @@
 from django.urls import path,include
 from rest_framework_nested import routers
 from users.views import CompanyViewset,UserProfileViewset,ProfileViewSet
-from products.views import CategoryViewSet,TachStackViewSet,TagViewSet,ProductViewSet
+from products.views import CategoryViewSet,TachStackViewSet,TagViewSet,ProductViewSet,ProductVersionViewSet
 
 
 
@@ -21,9 +21,14 @@ categories_router = routers.NestedDefaultRouter(router,'category',lookup='catego
 categories_router.register('products',ProductViewSet,basename='products')
 
 
+products_router = routers.NestedDefaultRouter(categories_router,'products',lookup='product')
+products_router.register('version',ProductVersionViewSet, basename='version')
+
+
 
 urlpatterns = [
     path('',include(router.urls)),
     path('', include(companies_router.urls)),
-    path('',include(categories_router.urls))
+    path('',include(categories_router.urls)),
+    path('',include(products_router.urls))
 ]
