@@ -1,7 +1,7 @@
 from django.urls import path,include
 from rest_framework_nested import routers
 from users.views import CompanyViewset,UserProfileViewset,ProfileViewSet
-from products.views import CategoryViewSet,TachStackViewSet,TagViewSet,ProductViewSet,ProductVersionViewSet,ProductImageViewSet, ProductVersionImageViewSet
+from products.views import CategoryViewSet,TachStackViewSet,TagViewSet,ProductViewSet,ProductVersionViewSet,ProductImageViewSet, ProductVersionImageViewSet,RestoreCategoryViewSet,RestoreTeckStackViewSet,RestoreTagViewSet,RestoreProductViewSet,RestoreProductImageViewSet,RestoreProductVersionImageViewSet,RestoreProductVersionViewSet
 
 
 
@@ -9,8 +9,15 @@ router = routers.DefaultRouter()
 router.register('companies',CompanyViewset, basename='companies')
 router.register('profile',UserProfileViewset,basename='profile')
 router.register('category',CategoryViewSet, basename='category')
+router.register('category-restore',RestoreCategoryViewSet,basename='restore-category')
 router.register('tachstack',TachStackViewSet,basename='tach-stack')
+router.register('tachstack-restore',RestoreTeckStackViewSet,basename='restore-techstack')
 router.register('tag',TagViewSet,basename='tag')
+router.register('tag-restore', RestoreTagViewSet, basename='restore-tag')
+router.register('product-restore', RestoreProductViewSet, basename='restore-product')
+router.register('version-restore', RestoreProductVersionViewSet, basename='restore-version')
+router.register('product-image-restore', RestoreProductImageViewSet, basename='restore-product-image')
+router.register('version-image-restore', RestoreProductVersionImageViewSet, basename='restore-version-image')
 
 
 

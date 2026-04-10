@@ -40,19 +40,23 @@ class Category(SoftDeleteModel):
 
     # race-condition safe slug
     def save(self, *args, **kwargs):
-        self.full_clean() # call clean method
-        if not self.slug:
+        # run validation only on create/update explicitly safe
+        if not kwargs.get("raw", False):
+            self.full_clean()
+
+        # slug generation
+        if not self.slug and self.name:
             base_slug = slugify(self.name)
             slug = base_slug
             n = 1
-            while True:
-                try:
-                    self.slug = slug
-                    super().save(*args, **kwargs)
-                    break
-                except IntegrityError:
-                    slug = f"{base_slug}-{n}"
-                    n += 1
+
+            while Category.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{n}"
+                n += 1
+
+            self.slug = slug
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -124,11 +128,15 @@ class Product(SoftDeleteModel):
             base_slug = slugify(self.name)
             slug = base_slug
             n = 1
-            while Product.objects.filter(slug=slug).exists():
-                slug = f"{base_slug}-{n}"
-                n += 1
-            self.slug = slug
-        super().save(*args, **kwargs)
+
+            while True:
+                try:
+                    self.slug = slug
+                    super().save(*args, **kwargs)
+                    break
+                except IntegrityError:
+                    slug = f"{base_slug}-{n}"
+                    n += 1
 
     def update_rating(self):
         reviews = self.product.reviews.all()  # all reviews of this product
@@ -186,17 +194,24 @@ class ProductVersion(SoftDeleteModel):
     def clean(self):
         if self.discount_price and self.discount_price > self.price:
             raise ValidationError("Discount price cannot be greater than price")
-    #slug safe
+    # race-condition safe slug
     def save(self, *args, **kwargs):
-        self.full_clean() #call clean
-        if not self.slug:
-            base_slug = slugify(self.version)
+        # run validation only on create/update explicitly safe
+        if not kwargs.get("raw", False):
+            self.full_clean()
+
+        # slug generation
+        if not self.slug and self.name:
+            base_slug = slugify(self.name)
             slug = base_slug
             n = 1
-            while Product.objects.filter(slug=slug).exists():
+
+            while Category.objects.filter(slug=slug).exclude(pk=self.pk).exists():
                 slug = f"{base_slug}-{n}"
                 n += 1
+
             self.slug = slug
+
         super().save(*args, **kwargs)
     
 

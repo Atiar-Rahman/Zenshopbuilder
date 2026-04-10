@@ -49,14 +49,18 @@ class SoftDeleteModel(models.Model):
     # soft delete methods
 
     def soft_delete(self, user=None):
+        print('soft delete called')
+        print(self.is_deleted)
         """Mark objects as deleted"""
         self.is_deleted = True
         self.deleted_at = timezone.now()
 
         if user:
             self.deleted_by = user
-
+        
+        print(self.is_deleted)
         self.save()
+        self.refresh_from_db()
 
 
     def restore(self):
