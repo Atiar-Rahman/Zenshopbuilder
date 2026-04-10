@@ -42,7 +42,7 @@ class TagViewSet(ModelViewSet):
 
 
 class ProductViewSet(ModelViewSet):
-    queryset = Product.active_objects.all().prefetch_related('images','versions')
+    queryset = Product.active_objects.select_related('category').prefetch_related('images','versions','tech_stack','tags').all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
     lookup_field= 'slug'
@@ -53,7 +53,7 @@ class ProductViewSet(ModelViewSet):
         context = super().get_serializer_context()
         context['request'] = self.request
         category_slug = self.kwargs.get('category_slug')
-        category = Category.objects.get(slug=category_slug, is_deleted=False)
+        category = Category.objects.get(slug=category_slug)
         context['category_id'] = category.id
         return context
     
