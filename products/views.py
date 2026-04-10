@@ -3,8 +3,25 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from products.models import Category,ProductImage,TechStack,Tag,Product,ProductVersion,ProductVersionImage
 from products.serializers import CategorySerializer,TechStackSerializer,TagSerializer,ProductSerializer, ProductVersionSerializer,ProductImageSerializer,ProductVersionImageSerializer
+from rest_framework.response import Response
+class SoftDeleteRestoreMixin:
+    """Mixin to handle soft delete and restore logic for viewsets."""
+    
+    def restore(self, request, *args, **kwargs):
+        """Restore a soft-deleted object."""
+        instance = self.get_object()
+        if instance.is_deleted:
+            instance.restore()  # Call restore method of the model
+            return Response({"status": "restored"})
+        return Response({"status": "already_active"})
 
-class CategoryViewSet(ModelViewSet):
+    def perform_destroy(self, instance):
+        """Perform soft delete."""
+        instance.soft_delete(user=self.request.user)  # Optionally, pass the u
+
+
+
+class CategoryViewSet(SoftDeleteRestoreMixin, ModelViewSet):
     # use active_objects manager for listing
     queryset = Category.active_objects.all()
     serializer_class = CategorySerializer
@@ -17,7 +34,7 @@ class CategoryViewSet(ModelViewSet):
         context['request'] = self.request
         return context
     
-class TachStackViewSet(ModelViewSet):
+class TachStackViewSet(SoftDeleteRestoreMixin, ModelViewSet):
     queryset = TechStack.active_objects.all()
     serializer_class = TechStackSerializer
     permission_classes = [IsAuthenticated]
@@ -29,7 +46,7 @@ class TachStackViewSet(ModelViewSet):
         return context
 
 
-class TagViewSet(ModelViewSet):
+class TagViewSet(SoftDeleteRestoreMixin, ModelViewSet):
     queryset = Tag.active_objects.all()
     serializer_class = TagSerializer
     permission_classes = [IsAuthenticated]
@@ -41,7 +58,7 @@ class TagViewSet(ModelViewSet):
         return context
 
 
-class ProductViewSet(ModelViewSet):
+class ProductViewSet(SoftDeleteRestoreMixin, ModelViewSet):
     queryset = Product.active_objects.select_related('category').prefetch_related('images','versions','tech_stack','tags').all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
@@ -58,7 +75,7 @@ class ProductViewSet(ModelViewSet):
         return context
     
 
-class ProductVersionViewSet(ModelViewSet):
+class ProductVersionViewSet(SoftDeleteRestoreMixin, ModelViewSet):
     queryset = ProductVersion.active_objects.all()
     serializer_class = ProductVersionSerializer
     permission_classes = [IsAuthenticated]  # Only authenticated users can access
@@ -74,7 +91,7 @@ class ProductVersionViewSet(ModelViewSet):
 
     
 
-class ProductImageViewSet(ModelViewSet):
+class ProductImageViewSet(SoftDeleteRestoreMixin, ModelViewSet):
     queryset = ProductImage.active_objects.all()
     serializer_class = ProductImageSerializer
 
@@ -87,7 +104,7 @@ class ProductImageViewSet(ModelViewSet):
         context['product_id']=product.id
         return context
 
-class ProductVersionImageViewSet(ModelViewSet):
+class ProductVersionImageViewSet(SoftDeleteRestoreMixin, ModelViewSet):
     queryset = ProductVersionImage.active_objects.all()
     serializer_class = ProductVersionImageSerializer
 
