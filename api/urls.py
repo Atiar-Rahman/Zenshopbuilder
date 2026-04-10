@@ -2,7 +2,7 @@ from django.urls import path,include
 from rest_framework_nested import routers
 from users.views import CompanyViewset,UserProfileViewset,ProfileViewSet
 from products.views import CategoryViewSet,TachStackViewSet,TagViewSet,ProductViewSet,ProductVersionViewSet,ProductImageViewSet, ProductVersionImageViewSet,RestoreCategoryViewSet,RestoreTeckStackViewSet,RestoreTagViewSet,RestoreProductViewSet,RestoreProductImageViewSet,RestoreProductVersionImageViewSet,RestoreProductVersionViewSet
-
+from orders.views import CartViewSet
 
 
 router = routers.DefaultRouter()
@@ -18,7 +18,7 @@ router.register('product-restore', RestoreProductViewSet, basename='restore-prod
 router.register('version-restore', RestoreProductVersionViewSet, basename='restore-version')
 router.register('product-image-restore', RestoreProductImageViewSet, basename='restore-product-image')
 router.register('version-image-restore', RestoreProductVersionImageViewSet, basename='restore-version-image')
-
+router.register('carts', CartViewSet, basename='carts')
 
 
 # Nested router
