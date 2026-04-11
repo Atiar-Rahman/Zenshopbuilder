@@ -2,7 +2,7 @@
 from rest_framework.viewsets import ModelViewSet,GenericViewSet
 from rest_framework.permissions import IsAuthenticated
 from products.models import Category,ProductImage,TechStack,Tag,Product,ProductVersion,ProductVersionImage
-from products.serializers import CategorySerializer,TechStackSerializer,TagSerializer,ProductSerializer, ProductVersionSerializer,ProductImageSerializer,ProductVersionImageSerializer
+from products.serializers import CategorySerializer,TechStackSerializer,TagSerializer,ProductSerializer, ProductVersionSerializer,ProductImageSerializer,ProductVersionImageSerializer, ProductDetailSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import status
@@ -115,11 +115,17 @@ class RestoreTagViewSet(SoftDeleteRestoreMixin,ModelViewSet):
     serializer_class = TagSerializer
     permission_classes = [IsAdminUser]
     
+
+class ProductViewSet(ListModelMixin,GenericViewSet):
+    """product list only"""
+    queryset = Product.active_objects.select_related('category').all()
+    serializer_class = ProductSerializer
+
     
 
-class ProductViewSet(SoftDeleteMixin, ModelViewSet):
+class ProductDetailViewSet(SoftDeleteMixin, ModelViewSet):
     queryset = Product.active_objects.select_related('category').prefetch_related('images','versions','tech_stack','tags').all()
-    serializer_class = ProductSerializer
+    serializer_class = ProductDetailSerializer
     permission_classes = [IsAuthenticated]
     lookup_field= 'slug'
 

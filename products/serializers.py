@@ -24,16 +24,13 @@ class CategorySerializer(serializers.ModelSerializer):
             'parent_id',
             'is_deleted',
             'created_by',
-            'deleted_by',
-            'deleted_at'
         ]
         read_only_fields = [
             'id',
             'slug',
             'created_by',
-            'deleted_by',
-            'deleted_at'
         ]
+        
 
     #  Parent short representation
     def get_parent(self, obj):
@@ -205,7 +202,15 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
         return product_image
 
+
 class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['id','name','thumbnail','live_preview_url','status','short_description']
+
+
+
+class ProductDetailSerializer(serializers.ModelSerializer):
     product_image = ProductImageSerializer(source = 'images' ,many=True, read_only=True)
     product_version = ProductVersionSerializer(source='versions',many=True, read_only=True)
 

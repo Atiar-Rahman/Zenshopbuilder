@@ -1,7 +1,7 @@
 from django.urls import path,include
 from rest_framework_nested import routers
 from users.views import CompanyViewset,UserProfileViewset,ProfileViewSet
-from products.views import CategoryViewSet,TachStackViewSet,TagViewSet,ProductViewSet,ProductVersionViewSet,ProductImageViewSet, ProductVersionImageViewSet,RestoreCategoryViewSet,RestoreTeckStackViewSet,RestoreTagViewSet,RestoreProductViewSet,RestoreProductImageViewSet,RestoreProductVersionImageViewSet,RestoreProductVersionViewSet
+from products.views import CategoryViewSet,TachStackViewSet,TagViewSet,ProductViewSet,ProductVersionViewSet,ProductImageViewSet, ProductVersionImageViewSet,RestoreCategoryViewSet,RestoreTeckStackViewSet,RestoreTagViewSet,RestoreProductViewSet,RestoreProductImageViewSet,RestoreProductVersionImageViewSet,RestoreProductVersionViewSet, ProductDetailViewSet
 from orders.views import CartViewSet
 
 
@@ -10,6 +10,7 @@ router.register('companies',CompanyViewset, basename='companies')
 router.register('profile',UserProfileViewset,basename='profile')
 router.register('category',CategoryViewSet, basename='category')
 router.register('category-restore',RestoreCategoryViewSet,basename='restore-category')
+router.register('products',ProductViewSet,basename='products')
 router.register('tachstack',TachStackViewSet,basename='tach-stack')
 router.register('tachstack-restore',RestoreTeckStackViewSet,basename='restore-techstack')
 router.register('tag',TagViewSet,basename='tag')
@@ -25,7 +26,7 @@ router.register('carts', CartViewSet, basename='carts')
 companies_router = routers.NestedDefaultRouter(router, 'companies', lookup='company')
 companies_router.register('employees', ProfileViewSet, basename='company-employees')
 categories_router = routers.NestedDefaultRouter(router,'category',lookup='category')
-categories_router.register('products',ProductViewSet,basename='products')
+categories_router.register('products',ProductDetailViewSet,basename='products')
 
 
 products_router = routers.NestedDefaultRouter(categories_router,'products',lookup='product')
