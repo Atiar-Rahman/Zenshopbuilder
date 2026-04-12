@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.mixins import ListModelMixin,UpdateModelMixin,RetrieveModelMixin
 from rest_framework.permissions import IsAdminUser,IsAuthenticated,IsAuthenticatedOrReadOnly
-
+from django_filters.rest_framework import DjangoFilterBackend
 
 class SoftDeleteMixin:
     """Reusable mixin for soft delete & restore"""
@@ -56,6 +56,8 @@ class CategoryViewSet(SoftDeleteMixin, ModelViewSet):
     # use active_objects manager for listing
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['name','is_active']
     lookup_field='slug'
 
     def get_serializer_context(self):
@@ -127,6 +129,8 @@ class ProductDetailViewSet(SoftDeleteMixin, ModelViewSet):
     queryset = Product.active_objects.select_related('category').prefetch_related('images','versions','tech_stack','tags').all()
     serializer_class = ProductDetailSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['company','name','category','tech_stack','versions']
     lookup_field= 'slug'
 
     

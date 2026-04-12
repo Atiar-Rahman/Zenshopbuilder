@@ -3,7 +3,7 @@ from rest_framework.viewsets import GenericViewSet,ModelViewSet
 from orders.models import Cart, CartItem,Order,OrderItem
 from orders.serializers import CartSerializer, CartItemSerializer, AddCartItemSerialzer, UpdateCartItemSerializer, OrderSerializer,CreateOrderSerializer
 from rest_framework.permissions import IsAuthenticated
-
+from django_filters.rest_framework import DjangoFilterBackend
 
 class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
     
@@ -24,6 +24,8 @@ class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, Gener
 class CartItemViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     http_method_names = ['get', 'post', 'patch', 'delete']
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['product','product_version']
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -48,6 +50,8 @@ class CartItemViewSet(ModelViewSet):
 class OrderViewSet(ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['customer_name','phone_number','status','payment_status','transaction_id']
 
     def get_serializer_class(self):
 

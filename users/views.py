@@ -2,12 +2,15 @@ from django.shortcuts import render
 from users.models import Company,Profile
 from rest_framework.viewsets import ModelViewSet
 from users.serializers import CompanySerializer,UserProfoleSerializer
+from django_filters.rest_framework import DjangoFilterBackend
 # Create your views here.
 
 
 class CompanyViewset(ModelViewSet):
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['name','email','address']
 
 class UserProfileViewset(ModelViewSet):
     serializer_class = UserProfoleSerializer
