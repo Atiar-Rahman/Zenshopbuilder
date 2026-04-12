@@ -6,8 +6,13 @@ from rest_framework.permissions import IsAuthenticated
 
 
 class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
-    queryset= Cart.objects.all()
+    
     serializer_class = CartSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Cart.objects.filter(user=self.request.user)
+
 
     
 class CartItemViewSet(ModelViewSet):

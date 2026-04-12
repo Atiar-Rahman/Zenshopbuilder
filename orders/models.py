@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from products.models import Product,ProductVersion
 
+import phonenumbers
+
 User = get_user_model()
 
 class Cart(SoftDeleteModel):
@@ -43,6 +45,30 @@ class CartItem(SoftDeleteModel):
         return f"{self.product.name} ({self.product_version.license_type})"
     
 
+# --- Global phone vlidator---
+
+def validate_phone_number(value):
+    try:
+        z = phonenumbers.parse(value,None) # None= allow any country
+        if not phonenumbers.is_valid_numbers(z):
+            raise ValueError('Enter a valid phone number')
+    except phonenumbers.NumberParseException:
+        raise ValueError('enter a valid phone number')
+
+
+class Address(models.Model):
+    street_address = models.TextField() # main text address(road, area)
+    city = models.CharField(max_length=100)
+    postal_code = models.CharField(max_length=200, null=True, blank=True)
+    country = models.CharField(max_length=100, default='Bangladesh')
+
+    def __str__(self):
+        return f'{self.street_address}, {self.cty},{self.postal_code}, {self.country}'
+
+
+
+
+
 
 class Order(SoftDeleteModel):
 
@@ -53,6 +79,16 @@ class Order(SoftDeleteModel):
         CANCELED = "CANCELED", "Canceled"
         REFUNDED = "REFUNDED", "Refunded"
 
+    class PaymentStatus(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        PAID = "PAID", "Paid"
+        FAILED = "FAILED", "Failed"
+        REFUNDED = "REFUNDED", "Refunded"
+
+    class PaymentMethod(models.TextChoices):
+        STRIPE = "STRIPE", "Stripe"
+        SSLCOMMERZ = "SSLCOMMERZ", "SSLCommerz"
+        CASH = "CASH", "Cash"
 
     user = models.ForeignKey(
         User,
@@ -60,7 +96,20 @@ class Order(SoftDeleteModel):
         related_name="orders"
     )
 
-    # Order Lifecycle
+    customer_name = models.CharField(max_length=100, default='unknown')
+
+    phone_number = models.CharField(
+        validators=[validate_phone_number],
+        max_length=20
+    )
+
+    address = models.ForeignKey(
+        Address,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='orders'
+    )
+
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -68,30 +117,36 @@ class Order(SoftDeleteModel):
         db_index=True
     )
 
-    #  Payment Info
-    payment_method = models.CharField(max_length=50)  # Stripe / SSLCommerz
-    payment_status = models.BooleanField(default=False)
-    transaction_id = models.CharField(max_length=255, null=True, blank=True)
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices
+    )
 
-    #  Pricing
+    payment_status = models.CharField(
+        max_length=10,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.PENDING,
+        db_index=True
+    )
+
+    transaction_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        db_index=True
+    )   
+
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_price = models.DecimalField(max_digits=14, decimal_places=2)
 
-    #  Extra
     note = models.TextField(blank=True, null=True)
     canceled_reason = models.TextField(blank=True, null=True)
 
-   
-    #  calculate total (optional helper)
-    def calculate_total(self):
-        return sum(item.total_price for item in self.items.all())
 
     def __str__(self):
-        return f"Order {self.id} - {self.status}" 
-
-
+        return f"Order {self.id} - {self.status}"
 
 class OrderItem(SoftDeleteModel):
     order = models.ForeignKey(
@@ -120,15 +175,11 @@ class OrderItem(SoftDeleteModel):
 
     unit_price = models.DecimalField(max_digits=12, decimal_places=2)
     quantity = models.PositiveIntegerField(default=1)
+    tax = models.DecimalField(max_digits=12, decimal_places=2,default=0)
 
     total_price = models.DecimalField(max_digits=14, decimal_places=2)
 
     
-
-    # auto calculation
-    def save(self, *args, **kwargs):
-        self.total_price = self.unit_price * self.quantity
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.product_name} ({self.license_type}) x {self.quantity}"
