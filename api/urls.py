@@ -2,7 +2,7 @@ from django.urls import path,include
 from rest_framework_nested import routers
 from users.views import CompanyViewset,UserProfileViewset,ProfileViewSet
 from products.views import CategoryViewSet,TachStackViewSet,TagViewSet,ProductViewSet,ProductVersionViewSet,ProductImageViewSet, ProductVersionImageViewSet,RestoreCategoryViewSet,RestoreTeckStackViewSet,RestoreTagViewSet,RestoreProductViewSet,RestoreProductImageViewSet,RestoreProductVersionImageViewSet,RestoreProductVersionViewSet, ProductDetailViewSet
-from orders.views import CartViewSet
+from orders.views import CartViewSet, CartItemViewSet
 
 
 router = routers.DefaultRouter()
@@ -22,6 +22,7 @@ router.register('version-image-restore', RestoreProductVersionImageViewSet, base
 router.register('carts', CartViewSet, basename='carts')
 
 
+
 # Nested router
 companies_router = routers.NestedDefaultRouter(router, 'companies', lookup='company')
 companies_router.register('employees', ProfileViewSet, basename='company-employees')
@@ -36,11 +37,14 @@ products_router.register('images',ProductImageViewSet,basename='images')
 versions_router = routers.NestedDefaultRouter(products_router,'version', lookup='version')
 versions_router.register('images',ProductVersionImageViewSet, basename='version-image')
 
+carts_router = routers.NestedDefaultRouter(router,'carts', lookup='cart')
+carts_router.register('items', CartItemViewSet, basename='cart-item')
 
 urlpatterns = [
     path('',include(router.urls)),
     path('', include(companies_router.urls)),
     path('',include(categories_router.urls)),
     path('',include(products_router.urls)),
-    path('',include(versions_router.urls))
+    path('',include(versions_router.urls)),
+    path('',include(carts_router.urls)),
 ]
