@@ -1,7 +1,7 @@
 from rest_framework.mixins import CreateModelMixin,RetrieveModelMixin,DestroyModelMixin
 from rest_framework.viewsets import GenericViewSet,ModelViewSet
 from orders.models import Cart, CartItem
-from orders.serializers import CartSerializer, CartItemSerializer, AddCartItemSerialzer
+from orders.serializers import CartSerializer, CartItemSerializer, AddCartItemSerialzer, UpdateCartItemSerializer
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -17,6 +17,8 @@ class CartItemViewSet(ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return AddCartItemSerialzer
+        elif self.request.method == 'PATCH':
+            return UpdateCartItemSerializer
         return CartItemSerializer
     
     def get_serializer_context(self):
