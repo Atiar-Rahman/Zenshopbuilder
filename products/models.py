@@ -105,7 +105,7 @@ class Product(SoftDeleteModel):
         blank=True,
         related_name='products'
     )
-
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     is_active = models.BooleanField(default=True)
 
@@ -178,7 +178,7 @@ class ProductVersion(SoftDeleteModel):
     docs_url = models.URLField(blank=True, null=True)
 
     download_count = models.PositiveIntegerField(default=0)
-
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
 

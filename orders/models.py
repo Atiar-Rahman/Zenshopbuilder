@@ -2,8 +2,9 @@ from core.models import SoftDeleteModel
 from django.contrib.auth import get_user_model
 from django.db import models
 from products.models import Product,ProductVersion
-
+from django.core.exceptions import ValidationError
 import phonenumbers
+from phonenumbers import NumberParseException
 
 User = get_user_model()
 
@@ -49,11 +50,13 @@ class CartItem(SoftDeleteModel):
 
 def validate_phone_number(value):
     try:
-        z = phonenumbers.parse(value,None) # None= allow any country
-        if not phonenumbers.is_valid_numbers(z):
-            raise ValueError('Enter a valid phone number')
-    except phonenumbers.NumberParseException:
-        raise ValueError('enter a valid phone number')
+        number = phonenumbers.parse(value, None)  # None = any country
+
+        if not phonenumbers.is_valid_number(number):
+            raise ValidationError("Enter a valid phone number")
+
+    except NumberParseException:
+        raise ValidationError("Enter a valid phone number")
 
 
 class Address(models.Model):
@@ -63,7 +66,7 @@ class Address(models.Model):
     country = models.CharField(max_length=100, default='Bangladesh')
 
     def __str__(self):
-        return f'{self.street_address}, {self.cty},{self.postal_code}, {self.country}'
+        return f'{self.street_address}, {self.city},{self.postal_code}, {self.country}'
 
 
 

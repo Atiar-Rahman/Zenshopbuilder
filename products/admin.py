@@ -4,7 +4,12 @@ from products.models import Category,TechStack,ProductVersion,Tag,ProductImage,P
 
 admin.site.register(Category)
 admin.site.register(TechStack)
-admin.site.register(ProductVersion)
+
+@admin.register(ProductVersion)
+class CartAdmin(admin.ModelAdmin):
+    list_display = ['id','product']
+
+
 admin.site.register(Tag)
 admin.site.register(ProductVersionImage)
 admin.site.register(ProductImage)

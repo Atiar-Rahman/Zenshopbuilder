@@ -1,7 +1,7 @@
 from rest_framework.mixins import CreateModelMixin,RetrieveModelMixin,DestroyModelMixin
 from rest_framework.viewsets import GenericViewSet,ModelViewSet
-from orders.models import Cart, CartItem
-from orders.serializers import CartSerializer, CartItemSerializer, AddCartItemSerialzer, UpdateCartItemSerializer
+from orders.models import Cart, CartItem,Order,OrderItem
+from orders.serializers import CartSerializer, CartItemSerializer, AddCartItemSerialzer, UpdateCartItemSerializer, OrderSerializer,CreateOrderSerializer
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -10,8 +10,14 @@ class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, Gener
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated]
 
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
     def get_queryset(self):
-        return Cart.objects.filter(user=self.request.user)
+        if getattr(self, 'swagger_fake_view', False):
+            return Cart.objects.none()
+        return Cart.objects.prefetch_related('items').filter(user=self.request.user)
 
 
     
@@ -33,4 +39,31 @@ class CartItemViewSet(ModelViewSet):
         return context
 
     def get_queryset(self):
-        return CartItem.objects.filter(cart_id=self.kwargs.get('cart_pk'))
+        return CartItem.objects.select_related('product').filter(cart_id=self.kwargs.get('cart_pk'))
+    
+
+
+
+# order viewset
+class OrderViewSet(ModelViewSet):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+
+        if self.request.method=='POST':
+            return CreateOrderSerializer
+        return OrderSerializer
+
+    def get_serializer_context(self):
+        
+        return {'user_id':self.request.user.id}
+
+    def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Cart.objects.none()
+    
+        if self.request.user.is_staff:
+            return Order.objects.prefetch_related('items').all()
+        return Order.objects.filter(user = self.request.user)
+    
