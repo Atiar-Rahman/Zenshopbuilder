@@ -4,6 +4,7 @@ from orders.models import Cart, CartItem,Order,OrderItem
 from orders.serializers import CartSerializer, CartItemSerializer, AddCartItemSerialzer, UpdateCartItemSerializer, OrderSerializer,CreateOrderSerializer,UpdateOrderSerializer
 from rest_framework.permissions import IsAuthenticated,IsAdminUser
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter,OrderingFilter
 
 class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
     
@@ -49,8 +50,12 @@ class CartItemViewSet(ModelViewSet):
 # order viewset
 class OrderViewSet(ModelViewSet):
     serializer_class = OrderSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['customer_name','phone_number','status','payment_status','transaction_id']
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+
+    filterset_fields = ['status', 'payment_status']
+    search_fields = ['user__email']
+    ordering_fields = ['created_at', 'total_price']
+
     http_method_names = ['get', 'post', 'patch', 'delete']
     def get_serializer_class(self):
 

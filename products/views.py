@@ -9,6 +9,9 @@ from rest_framework import status
 from rest_framework.mixins import ListModelMixin,UpdateModelMixin,RetrieveModelMixin
 from rest_framework.permissions import IsAdminUser,IsAuthenticated,IsAuthenticatedOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
+from products.filters import ProductFilter
+from django.db.models import Min, Max
 
 class SoftDeleteMixin:
     """Reusable mixin for soft delete & restore"""
@@ -67,8 +70,10 @@ class CategoryViewSet(SoftDeleteMixin, ModelViewSet):
     # use active_objects manager for listing
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend,SearchFilter,OrderingFilter]
     filterset_fields = ['name','is_active']
+    search_fields = ['name']
+    ordering_fields = ['created_at','is_active']
     lookup_field='slug'
 
     def get_serializer_context(self):
@@ -97,6 +102,9 @@ class RestoreCategoryViewSet(SoftDeleteRestoreMixin,ListModelMixin, RetrieveMode
 class TachStackViewSet(SoftDeleteMixin, ModelViewSet):
     queryset = TechStack.active_objects.all()
     serializer_class = TechStackSerializer
+    filter_backends = [SearchFilter,OrderingFilter]
+    search_fields = ['name']
+    ordering_fields = ['created_at']
 
     def get_permissions(self):
         if self.request.method == 'GET':
@@ -123,6 +131,10 @@ class TagViewSet(SoftDeleteMixin, ModelViewSet):
     """Tag crud operation by authenticated user"""
     queryset = Tag.active_objects.all()
     serializer_class = TagSerializer
+    filter_backends = [SearchFilter,OrderingFilter]
+    
+    search_fields = ['name']
+    ordering_fields = ['created_at']
     
     def get_permissions(self):
         if self.request.method == 'GET':
@@ -143,10 +155,19 @@ class RestoreTagViewSet(SoftDeleteRestoreMixin,ModelViewSet):
     permission_classes = [IsAdminUser]
     
 
-class ProductViewSet(ListModelMixin,GenericViewSet):
-    """product list only all user no restrict"""
-    queryset = Product.active_objects.select_related('category').all()
+class ProductViewSet(ListModelMixin, GenericViewSet):
+    queryset = Product.active_objects.select_related('category').annotate(
+        min_price=Min('versions__price'),
+        max_price =Max('versions__price')
+    )
     serializer_class = ProductSerializer
+
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+
+    filterset_class = ProductFilter
+    search_fields = ['name', 'tech_stack']
+
+    ordering_fields = ['created_at', 'total_views', 'min_price','max_price']
 
     
 
@@ -154,11 +175,12 @@ class ProductDetailViewSet(SoftDeleteMixin, ModelViewSet):
     """Product details Get only authenticated user other operation only adminuser"""
     queryset = Product.active_objects.select_related('category').prefetch_related('images','versions','tech_stack','tags').all()
     serializer_class = ProductDetailSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['company','name','category','tech_stack','versions']
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     lookup_field= 'slug'
 
-    
+    filterset_fields = ['company','name','category','tech_stack','versions']
+    search_fields = ['name','tech_stack']
+    ordering_fields = ['created_at','total_views']
     def get_permissions(self):
         if self.request.method == 'GET':
             return [IsAuthenticated()]
@@ -192,6 +214,10 @@ class ProductVersionViewSet(SoftDeleteMixin, ModelViewSet):
     queryset = ProductVersion.active_objects.all()
     serializer_class = ProductVersionSerializer
     lookup_field='slug'
+
+    filter_backends = [DjangoFilterBackend,SearchFilter, OrderingFilter]
+
+    filterset_fields = ['version','price']
 
 
     def get_permissions(self):
