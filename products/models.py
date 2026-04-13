@@ -6,7 +6,7 @@ from django.core.validators import MinValueValidator
 from users.models import Company
 from core.models import SoftDeleteModel
 from django.db import IntegrityError
-
+from django.db.models import Avg,Count
 
 class Category(SoftDeleteModel):
 
@@ -137,18 +137,21 @@ class Product(SoftDeleteModel):
                 except IntegrityError:
                     slug = f"{base_slug}-{n}"
                     n += 1
-
-    def update_rating(self):
-        reviews = self.product.reviews.all()  # all reviews of this product
-        total = reviews.count()
-        if total == 0:
-            self.product.rating = 0
-            self.product.total_reviews = 0
         else:
-            self.product.rating = sum(r.rating for r in reviews) / total
-            self.product.total_reviews = total
-        self.product.save(update_fields=['rating', 'total_reviews'])
-    
+            super().save(*args, **kwargs)
+            
+    def update_rating(self):
+        data = self.reviews.aggregate(
+            avg=Avg('rating'),
+            total=Count('id')
+        )
+
+        self.rating = data['avg'] or 0
+        self.total_reviews = data['total']
+
+        print("checked")
+
+        self.save(update_fields=['rating', 'total_reviews'])
 
 class ProductVersion(SoftDeleteModel):
     REGULAR = 'regular'

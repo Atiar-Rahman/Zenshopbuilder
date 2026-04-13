@@ -3,7 +3,7 @@ from rest_framework_nested import routers
 from users.views import CompanyViewset,UserProfileViewset,ProfileViewSet
 from products.views import CategoryViewSet,TachStackViewSet,TagViewSet,ProductViewSet,ProductVersionViewSet,ProductImageViewSet, ProductVersionImageViewSet,RestoreCategoryViewSet,RestoreTeckStackViewSet,RestoreTagViewSet,RestoreProductViewSet,RestoreProductImageViewSet,RestoreProductVersionImageViewSet,RestoreProductVersionViewSet, ProductDetailViewSet
 from orders.views import CartViewSet, CartItemViewSet,OrderViewSet
-
+from reviews.views import ReviewViewSet
 
 router = routers.DefaultRouter()
 router.register('companies',CompanyViewset, basename='companies')
@@ -33,6 +33,7 @@ categories_router.register('products',ProductDetailViewSet,basename='products')
 products_router = routers.NestedDefaultRouter(categories_router,'products',lookup='product')
 products_router.register('version',ProductVersionViewSet, basename='version')
 products_router.register('images',ProductImageViewSet,basename='images')
+products_router.register('reviews', ReviewViewSet, basename='product-reviews')
 
 versions_router = routers.NestedDefaultRouter(products_router,'version', lookup='version')
 versions_router.register('images',ProductVersionImageViewSet, basename='version-image')

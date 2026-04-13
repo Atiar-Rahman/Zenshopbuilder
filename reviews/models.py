@@ -10,17 +10,14 @@ class Review(SoftDeleteModel):
     rating = models.FloatField()
     comment = models.TextField(null=True, blank=True)
 
-    def clean(self):
-        # Ensure rating between 0-5
-        if not (0 <= self.rating <= 5):
-            raise ValidationError("Rating must be between 0 and 5")
-
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'product'],
+                name='unique_user_product_review'
+            )
+        ]
     def __str__(self):
         return f"{self.title} - {self.product.name}"
 
-    # Optional: auto update Product rating & total_reviews
-    def save(self, *args, **kwargs):
-        self.full_clean()  # call clean()
-        super().save(*args, **kwargs)
-        # Update product rating after saving
-        self.product.update_rating()
+

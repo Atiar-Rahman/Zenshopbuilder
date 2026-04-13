@@ -1,3 +1,31 @@
-from django.shortcuts import render
+from rest_framework.viewsets import ModelViewSet
+from reviews.models import Review
+from reviews.serializers import ReviewSerializer
+from products.models import Product
+from django.shortcuts import get_object_or_404
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
-# Create your views here.
+class ReviewViewSet(ModelViewSet):
+    serializer_class = ReviewSerializer
+    queryset = Review.objects.all()
+
+    def get_permissions(self):
+        if self.request.method == 'DELETE':
+            return [IsAuthenticated(),IsAdminUser()]
+        
+        return [IsAuthenticated()]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+
+        product = get_object_or_404(
+            Product,
+            slug=self.kwargs.get('product_slug')
+        )
+
+        context['product'] = product
+        context['user'] = self.request.user
+        return context
+        
+    
+    
