@@ -173,6 +173,23 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         
 
 
+class UpdateOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ['status','note','canceled_reason']
+        def update(self, instance, validated_data):
+            user = self.context.get('user')
+            new_status = validated_data['status']
+
+            if new_status == Order.Status.CANCELED:
+                return OrderService.cancel_order(order=instance, user=user)
+            
+            if  not user.is_staff:
+                raise serializers.ValidationError({'details': 'you are not update this order'})
+            
+            return super().update(instance, validated_data)
+        
+
 
 class OrderSerializer(serializers.ModelSerializer):
     address = AddressSerializer()
