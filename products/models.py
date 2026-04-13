@@ -111,6 +111,8 @@ class Product(SoftDeleteModel):
 
     total_sales = models.PositiveIntegerField(default=0)
     total_views = models.PositiveIntegerField(default=0)
+    total_likes = models.PositiveIntegerField(default=0)
+    total_wishlist = models.PositiveIntegerField(default=0)
 
     rating = models.FloatField(default=0)
     total_reviews = models.PositiveIntegerField(default=0)

@@ -13,6 +13,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from products.filters import ProductFilter
 from django.db.models import Min, Max
 from products.paginations import CustomPagination
+from interactions.services import ProductService
 
 class SoftDeleteMixin:
     """Reusable mixin for soft delete & restore"""
@@ -156,7 +157,7 @@ class RestoreTagViewSet(SoftDeleteRestoreMixin,ModelViewSet):
     permission_classes = [IsAdminUser]
     
 
-class ProductViewSet(ListModelMixin, GenericViewSet):
+class ProductViewSet(ListModelMixin,RetrieveModelMixin, GenericViewSet):
     queryset = Product.active_objects.select_related('category').annotate(
         min_price=Min('versions__price'),
         max_price =Max('versions__price')
@@ -171,6 +172,38 @@ class ProductViewSet(ListModelMixin, GenericViewSet):
 
     ordering_fields = ['created_at', 'total_views', 'min_price','max_price']
 
+    #all service product related
+
+    def retrieve(self, request, *args, **kwargs):
+        product = self.get_object()
+
+        if request.user.is_authenticated:
+            ProductService.add_view(product, request.user)
+
+        return super().retrieve(request, *args, **kwargs)
+    
+
+    @action(detail=True, methods=['get','post'])
+    def toggle_like(self, request, pk=None):
+        product = self.get_object()
+
+        ProductService.toggle_like(product, request.user)
+
+        return Response(
+            {"message": "Like toggled"},
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=True, methods=['get','post'])
+    def toggle_wishlist(self, request, pk=None):
+        product = self.get_object()
+
+        ProductService.toggle_wishlist(product, request.user)
+
+        return Response(
+            {"message": "Wishlist toggled"},
+            status=status.HTTP_200_OK
+        )
     
 
 class ProductDetailViewSet(SoftDeleteMixin, ModelViewSet):

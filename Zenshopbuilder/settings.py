@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'core',
     'orders',
     'django_filters',
-    'reviews'
+    'reviews',
+    'interactions'
 ]
 
 MIDDLEWARE = [
