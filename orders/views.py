@@ -5,6 +5,8 @@ from orders.serializers import CartSerializer, CartItemSerializer, AddCartItemSe
 from rest_framework.permissions import IsAuthenticated,IsAdminUser
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter,OrderingFilter
+from products.paginations import CustomPagination
+
 
 class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
     
@@ -55,6 +57,8 @@ class OrderViewSet(ModelViewSet):
     filterset_fields = ['status', 'payment_status']
     search_fields = ['user__email']
     ordering_fields = ['created_at', 'total_price']
+
+    pagination_class = CustomPagination
 
     http_method_names = ['get', 'post', 'patch', 'delete']
     def get_serializer_class(self):

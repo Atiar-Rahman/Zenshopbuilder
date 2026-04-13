@@ -12,6 +12,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from products.filters import ProductFilter
 from django.db.models import Min, Max
+from products.paginations import CustomPagination
 
 class SoftDeleteMixin:
     """Reusable mixin for soft delete & restore"""
@@ -160,6 +161,7 @@ class ProductViewSet(ListModelMixin, GenericViewSet):
         min_price=Min('versions__price'),
         max_price =Max('versions__price')
     )
+    pagination_class = CustomPagination
     serializer_class = ProductSerializer
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
