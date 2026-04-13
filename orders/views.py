@@ -51,7 +51,7 @@ class OrderViewSet(ModelViewSet):
     serializer_class = OrderSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['customer_name','phone_number','status','payment_status','transaction_id']
-    http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options', 'trace']
+    http_method_names = ['get', 'post', 'patch', 'delete']
     def get_serializer_class(self):
 
         if self.request.method=='POST':

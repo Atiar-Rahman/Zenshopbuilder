@@ -49,7 +49,18 @@ class SoftDeleteRestoreMixin:
             {"status": "already_active"},
             status=status.HTTP_400_BAD_REQUEST
         )
+    
+    @action(detail=True, methods=['get','delete'])
+    def hard_delete(self, request, slug=None):
+        instance = self.get_object()
 
+        if instance.products.exists():
+            return Response(
+                {"error": "Cannot delete category with products"},
+                status=400
+            )
+        instance.delete()
+        return Response({"message": "Permanently deleted"})
 
 
 class CategoryViewSet(SoftDeleteMixin, ModelViewSet):
@@ -76,6 +87,7 @@ class CategoryViewSet(SoftDeleteMixin, ModelViewSet):
 
 
 class RestoreCategoryViewSet(SoftDeleteRestoreMixin,ListModelMixin, RetrieveModelMixin, UpdateModelMixin, GenericViewSet):
+    http_method_names = ['get','delete']
     queryset = Category.deleted_objects.all()
     serializer_class = CategorySerializer
     lookup_field = 'slug'
@@ -85,7 +97,11 @@ class RestoreCategoryViewSet(SoftDeleteRestoreMixin,ListModelMixin, RetrieveMode
 class TachStackViewSet(SoftDeleteMixin, ModelViewSet):
     queryset = TechStack.active_objects.all()
     serializer_class = TechStackSerializer
-    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [IsAuthenticated()]
+        return [IsAdminUser()]
 
     def get_serializer_context(self):
         # Pass request for created_by
@@ -94,6 +110,8 @@ class TachStackViewSet(SoftDeleteMixin, ModelViewSet):
         return context
 
 class RestoreTeckStackViewSet(SoftDeleteRestoreMixin, ModelViewSet):
+    """TachStack Restore must be AdminUser"""
+    http_method_names=['get']
     queryset = TechStack.deleted_objects.all()
     serializer_class = TechStackSerializer
     permission_classes = [IsAdminUser]
@@ -102,9 +120,14 @@ class RestoreTeckStackViewSet(SoftDeleteRestoreMixin, ModelViewSet):
 
     
 class TagViewSet(SoftDeleteMixin, ModelViewSet):
+    """Tag crud operation by authenticated user"""
     queryset = Tag.active_objects.all()
     serializer_class = TagSerializer
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [IsAuthenticated()]
+        return [IsAdminUser()]
 
     def get_serializer_context(self):
         # Pass request for created_by
@@ -113,27 +136,35 @@ class TagViewSet(SoftDeleteMixin, ModelViewSet):
         return context
 
 class RestoreTagViewSet(SoftDeleteRestoreMixin,ModelViewSet):
+    """Restore deleted tag only admin"""
+    http_method_names=['get']
     queryset = Tag.deleted_objects.all()
     serializer_class = TagSerializer
     permission_classes = [IsAdminUser]
     
 
 class ProductViewSet(ListModelMixin,GenericViewSet):
-    """product list only"""
+    """product list only all user no restrict"""
     queryset = Product.active_objects.select_related('category').all()
     serializer_class = ProductSerializer
 
     
 
 class ProductDetailViewSet(SoftDeleteMixin, ModelViewSet):
+    """Product details Get only authenticated user other operation only adminuser"""
     queryset = Product.active_objects.select_related('category').prefetch_related('images','versions','tech_stack','tags').all()
     serializer_class = ProductDetailSerializer
-    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['company','name','category','tech_stack','versions']
     lookup_field= 'slug'
 
     
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [IsAuthenticated()]
+        return [IsAdminUser()]
+
+
     def get_serializer_context(self):
         
         # Pass request for created_by
@@ -149,16 +180,24 @@ class ProductDetailViewSet(SoftDeleteMixin, ModelViewSet):
         return context
 
 class RestoreProductViewSet(SoftDeleteRestoreMixin, ModelViewSet):
+    """Restore only adminuser"""
+    http_method_names = ['get']
     queryset = Product.deleted_objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAdminUser]
   
     
 class ProductVersionViewSet(SoftDeleteMixin, ModelViewSet):
+    """Product Version show only authenticated user others operation only adminuser"""
     queryset = ProductVersion.active_objects.all()
     serializer_class = ProductVersionSerializer
-    permission_classes = [IsAuthenticated]  # Only authenticated users can access
     lookup_field='slug'
+
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [IsAuthenticated()]
+        return [IsAdminUser()]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -173,15 +212,22 @@ class ProductVersionViewSet(SoftDeleteMixin, ModelViewSet):
         return context
     
 class RestoreProductVersionViewSet(SoftDeleteRestoreMixin, ModelViewSet):
+    """Restore product version only admin user"""
+    http_method_names = ['get']
     queryset = ProductVersion.deleted_objects.all()
     serializer_class = ProductVersionSerializer
     permission_classes = [IsAdminUser]
     
 
 class ProductImageViewSet(SoftDeleteMixin, ModelViewSet):
+    """Product Image get only authenticated user others operation adminuser"""
     queryset = ProductImage.active_objects.all()
     serializer_class = ProductImageSerializer
 
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [IsAuthenticated()]
+        return [IsAdminUser()]
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -197,14 +243,22 @@ class ProductImageViewSet(SoftDeleteMixin, ModelViewSet):
     
 
 class RestoreProductImageViewSet(SoftDeleteRestoreMixin, ModelViewSet):
+    """RestoreProduct image only admin user"""
+    http_method_names = ['get']
     queryset = ProductImage.deleted_objects.all()
     serializer_class = ProductImageSerializer
     permission_classes = [IsAdminUser]
 
 
 class ProductVersionImageViewSet(SoftDeleteMixin, ModelViewSet):
+    """Product Image get only authenticated user and other operation adminuser"""
     queryset = ProductVersionImage.active_objects.all()
     serializer_class = ProductVersionImageSerializer
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [IsAuthenticated()]
+        return [IsAdminUser()]
 
     
     def get_serializer_context(self):
@@ -220,6 +274,9 @@ class ProductVersionImageViewSet(SoftDeleteMixin, ModelViewSet):
         return context
 
 class RestoreProductVersionImageViewSet(SoftDeleteRestoreMixin, ModelViewSet):
+    """Restore ProductVersion Image only Admin user"""
+    http_method_names = ['get']
     queryset = ProductVersionImage.deleted_objects.all()
     serializer_class = ProductVersionImageSerializer
     permission_classes = [IsAdminUser]  
+
