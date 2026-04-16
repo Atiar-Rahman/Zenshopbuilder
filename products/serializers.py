@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from products.models import Category,Product,ProductImage,ProductVersion,TechStack,Tag,ProductVersionImage
-from users.serializers import CompanySerializer
-
+from users.serializers import Company
 class CategorySerializer(serializers.ModelSerializer):
     parent_id = serializers.PrimaryKeyRelatedField(
         source='parent',
@@ -156,14 +155,15 @@ class ProductVersionImageSerializer(serializers.ModelSerializer):
 
 class ProductVersionSerializer(serializers.ModelSerializer):
     version_image = ProductVersionImageSerializer(source = 'version_images',read_only=True, many=True)
+    file = serializers.FileField(required=False)
     class Meta:
         model = ProductVersion
         fields = [
-            'id', 'version', 'license_type', 'price', 'discount_price',
+            'id', 'version','slug', 'license_type', 'price', 'discount_price',
             'file', 'release_date', 'changelog', 'docs_url', 'download_count',
             'is_active', 'is_featured', 'is_deleted', 'created_by', 'deleted_by', 'deleted_at','product','version_image'
         ]
-        read_only_fields = ['id', 'download_count', 'created_by', 'deleted_by', 'deleted_at','version_image']
+        read_only_fields = ['id','slug','download_count', 'created_by', 'deleted_by', 'deleted_at','version_image']
 
     def create(self,validated_data):
         request = self.context.get('request')
@@ -211,97 +211,67 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = ['id','name','thumbnail','live_preview_url','status','short_description']
 
 
+class ProductWriteSerializer(serializers.ModelSerializer):
+    company = serializers.PrimaryKeyRelatedField(
+        queryset=Company.objects.all()
+    )
 
-class ProductDetailSerializer(serializers.ModelSerializer):
-    product_image = ProductImageSerializer(source = 'images' ,many=True, read_only=True)
-    product_version = ProductVersionSerializer(source='versions',many=True, read_only=True)
+    tax_rate = serializers.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        required=False
+    )
+
     thumbnail = serializers.ImageField(required=False, allow_null=True)
-    
+
     tech_stack = serializers.PrimaryKeyRelatedField(
         queryset=TechStack.objects.filter(is_deleted=False),
         many=True,
         required=False
     )
+
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.filter(is_deleted=False),
         many=True,
         required=False
     )
-    # Read using names
-    tech_stack_names = serializers.StringRelatedField(
-        source='tech_stack',
-        many=True,
-        read_only=True
-    )
-    tag_names = serializers.StringRelatedField(
-        source='tags',
-        many=True,
-        read_only=True
-    )
-    # Category name instead of ID
-    category_name = serializers.CharField(
-        source='category.name',
-        read_only=True
-    )
 
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'slug', 'short_description', 'description',
-            'thumbnail', 'live_preview_url', 'status', 'is_active',
-            'total_sales', 'total_views', 'rating', 'total_reviews',
-            'category', 'category_name',  # ID for write, name for read
-            'tech_stack', 'tech_stack_names',
-            'tags', 'tag_names','product_image','product_version'
-        ]
-        read_only_fields = [
-            'id','slug','deleted_by','created_by','created_at','deleted_at',
-            'total_sales','total_views','rating','total_reviews',
-            'category_name','tech_stack_names','tag_names','product_image','product_version'
+            'name', 'short_description', 'description',
+            'thumbnail', 'live_preview_url',
+            'category', 'tech_stack', 'tags',
+            'company', 'tax_rate'
         ]
 
     def create(self, validated_data):
         tech_stack_data = validated_data.pop('tech_stack', [])
         tags_data = validated_data.pop('tags', [])
 
-        request = self.context.get('request')
-        user = getattr(request, 'user', None)
-
-        if not user or not user.is_authenticated:
-            user = None
-
-        category_id = self.context.get('category_id')
-        if not category_id:
-            raise serializers.ValidationError("Category is required")
+        request = self.context['request']
+        user = request.user
 
         product = Product.objects.create(
             created_by=user,
-            category_id=category_id,
             **validated_data
         )
 
-        if tech_stack_data:
-            product.tech_stack.set(tech_stack_data)
-
-        if tags_data:
-            product.tags.set(tags_data)
+        product.tech_stack.set(tech_stack_data)
+        product.tags.set(tags_data)
 
         return product
+    
 
-    def update(self, instance, validated_data):
-        tech_stack_data = validated_data.pop('tech_stack', None)
-        tags_data = validated_data.pop('tags', None)
+class ProductDetailSerializer(serializers.ModelSerializer):
+    product_image = ProductImageSerializer(source='images', many=True, read_only=True)
+    product_version = ProductVersionSerializer(source='versions', many=True, read_only=True)
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+    tech_stack_names = serializers.StringRelatedField(source='tech_stack', many=True)
+    tag_names = serializers.StringRelatedField(source='tags', many=True)
 
-        if tech_stack_data is not None:
-            instance.tech_stack.set(tech_stack_data)
+    category_name = serializers.CharField(source='category.name')
 
-        if tags_data is not None:
-            instance.tags.set(tags_data)
-
-        instance.save()
-        return instance
-
-
+    class Meta:
+        model = Product
+        fields = '__all__'

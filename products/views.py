@@ -2,18 +2,20 @@
 from rest_framework.viewsets import ModelViewSet,GenericViewSet
 from rest_framework.permissions import IsAuthenticated
 from products.models import Category,ProductImage,TechStack,Tag,Product,ProductVersion,ProductVersionImage
-from products.serializers import CategorySerializer,TechStackSerializer,TagSerializer,ProductSerializer, ProductVersionSerializer,ProductImageSerializer,ProductVersionImageSerializer, ProductDetailSerializer
+from products.serializers import CategorySerializer,TechStackSerializer,TagSerializer,ProductSerializer, ProductVersionSerializer,ProductImageSerializer,ProductVersionImageSerializer, ProductDetailSerializer,ProductWriteSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.mixins import ListModelMixin,UpdateModelMixin,RetrieveModelMixin
-from rest_framework.permissions import IsAdminUser,IsAuthenticated,IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAdminUser,IsAuthenticated,AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from products.filters import ProductFilter
 from django.db.models import Min, Max
 from products.paginations import CustomPagination
 from interactions.services import ProductService
+from django.shortcuts import get_object_or_404
+from rest_framework.parsers import MultiPartParser, FormParser
 
 class SoftDeleteMixin:
     """Reusable mixin for soft delete & restore"""
@@ -207,33 +209,52 @@ class ProductViewSet(ListModelMixin,RetrieveModelMixin, GenericViewSet):
     
 
 class ProductDetailViewSet(SoftDeleteMixin, ModelViewSet):
-    """Product details Get only authenticated user other operation only adminuser"""
-    queryset = Product.active_objects.select_related('category').prefetch_related('images','versions','tech_stack','tags').all()
-    serializer_class = ProductDetailSerializer
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    lookup_field= 'slug'
+    lookup_field = 'slug'
 
-    filterset_fields = ['company','name','category','tech_stack','versions']
-    search_fields = ['name','tech_stack']
-    ordering_fields = ['created_at','total_views']
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+
+    filterset_fields = {
+        'company': ['exact'],
+        'category': ['exact'],
+        'name': ['icontains'],
+    }
+
+    search_fields = ['name', 'tech_stack__name']
+    ordering_fields = ['created_at', 'total_views']
+
     def get_permissions(self):
-        if self.request.method == 'GET':
+        if self.action == 'retrieve':
             return [IsAuthenticated()]
+        elif self.action == 'list':
+            return [AllowAny()]
         return [IsAdminUser()]
 
+    def get_queryset(self):
+        queryset = Product.objects.all()
+
+        if self.action in ['list', 'retrieve']:
+            queryset = Product.active_objects
+
+        return queryset.select_related('category').prefetch_related(
+            'images', 'versions', 'tech_stack', 'tags'
+        )
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return ProductWriteSerializer
+        return ProductDetailSerializer
 
     def get_serializer_context(self):
-        
-        # Pass request for created_by
         context = super().get_serializer_context()
-        
+
         if getattr(self, 'swagger_fake_view', False):
             return context
-        
-        context['request'] = self.request
-        category_slug = self.kwargs.get('category_slug')
-        category = Category.objects.get(slug=category_slug)
-        context['category_id'] = category.id
+
+        if 'category_slug' in self.kwargs:
+            context['category_id'] = Category.objects.filter(
+                slug=self.kwargs['category_slug']
+            ).values_list('id', flat=True).first()
+
         return context
 
 class RestoreProductViewSet(SoftDeleteRestoreMixin, ModelViewSet):
@@ -248,6 +269,7 @@ class ProductVersionViewSet(SoftDeleteMixin, ModelViewSet):
     """Product Version show only authenticated user others operation only adminuser"""
     queryset = ProductVersion.active_objects.all()
     serializer_class = ProductVersionSerializer
+    parser_classes = (MultiPartParser, FormParser)
     lookup_field='slug'
 
     filter_backends = [DjangoFilterBackend,SearchFilter, OrderingFilter]
@@ -271,6 +293,7 @@ class ProductVersionViewSet(SoftDeleteMixin, ModelViewSet):
         product = Product.active_objects.get(slug=product_slug)
         context['product_id']=product.id
         return context
+    
     
 class RestoreProductVersionViewSet(SoftDeleteRestoreMixin, ModelViewSet):
     """Restore product version only admin user"""

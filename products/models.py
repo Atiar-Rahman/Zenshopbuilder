@@ -8,6 +8,7 @@ from core.models import SoftDeleteModel
 from django.db import IntegrityError
 from django.db.models import Avg,Count
 from cloudinary.models import CloudinaryField
+from products.sluggenerate import generate_unique_slug
 
 class Category(SoftDeleteModel):
 
@@ -106,7 +107,7 @@ class Product(SoftDeleteModel):
         blank=True,
         related_name='products'
     )
-    tax_rate = models.DecimalField(max_digits=5, decimal_places=2)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2,null=True,blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     is_active = models.BooleanField(default=True)
 
@@ -128,19 +129,12 @@ class Product(SoftDeleteModel):
     #slug safe
     def save(self, *args, **kwargs):
         if not self.slug:
-            base_slug = slugify(self.name)
-            slug = base_slug
-            n = 1
+            self.slug = generate_unique_slug(self, field_name='name')
 
-            while True:
-                try:
-                    self.slug = slug
-                    super().save(*args, **kwargs)
-                    break
-                except IntegrityError:
-                    slug = f"{base_slug}-{n}"
-                    n += 1
-        else:
+        try:
+            super().save(*args, **kwargs)
+        except IntegrityError:
+            self.slug = generate_unique_slug(self, field_name='name')
             super().save(*args, **kwargs)
             
     def update_rating(self):
@@ -177,7 +171,7 @@ class ProductVersion(SoftDeleteModel):
     price = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)])
     discount_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
-    file = models.FileField(upload_to='products/files/',null=True,blank=True)
+    file = CloudinaryField(resource_type="raw", null=True, blank=True)
 
     release_date = models.DateField(blank=True, null=True)
     changelog = models.TextField(blank=True, null=True)
@@ -201,24 +195,19 @@ class ProductVersion(SoftDeleteModel):
         if self.discount_price and self.discount_price > self.price:
             raise ValidationError("Discount price cannot be greater than price")
     # race-condition safe slug
+
     def save(self, *args, **kwargs):
-        # run validation only on create/update explicitly safe
-        if not kwargs.get("raw", False):
+        if not self.pk:
             self.full_clean()
 
-        # slug generation
-        if not self.slug and self.name:
-            base_slug = slugify(self.name)
-            slug = base_slug
-            n = 1
+        if not self.slug and self.version:
+            self.slug = generate_unique_slug(self, field_name="version")
 
-            while Category.objects.filter(slug=slug).exclude(pk=self.pk).exists():
-                slug = f"{base_slug}-{n}"
-                n += 1
-
-            self.slug = slug
-
-        super().save(*args, **kwargs)
+        try:
+            super().save(*args, **kwargs)
+        except IntegrityError:
+            self.slug = generate_unique_slug(self, field_name="version")
+            super().save(*args, **kwargs)
     
 
 
