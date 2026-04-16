@@ -18,6 +18,9 @@ class ReviewViewSet(ModelViewSet):
     def get_serializer_context(self):
         context = super().get_serializer_context()
 
+        if getattr(self, 'swagger_fake_view', False):
+            return context
+        
         product = get_object_or_404(
             Product,
             slug=self.kwargs.get('product_slug')
