@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from users.managers import CustomUserManager
-
+from cloudinary.models import CloudinaryField
 # CustomUserModel create inheriate abstract user
 
 class User(AbstractUser):
@@ -75,7 +75,7 @@ class Profile(models.Model):
         related_name='employees'
     )
 
-    profile_image = models.ImageField(upload_to='profile/',blank=True, null=True)
+    profile_image = CloudinaryField('image')
     bio = models.TextField(blank=True,null=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES,default='male')
 

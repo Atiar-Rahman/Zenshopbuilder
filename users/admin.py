@@ -10,7 +10,7 @@ admin.site.register(Company)
 class CustomUserAdmin(UserAdmin):
     model = User
 
-    list_display=('email', 'first_name', 'last_name', 'is_active')
+    list_display=('email', 'first_name', 'last_name', 'is_active','role')
     list_filter = ('is_staff', 'is_active', 'is_superuser')
 
     ordering = ('email',)
@@ -22,7 +22,7 @@ class CustomUserAdmin(UserAdmin):
             'fields': ('first_name', 'last_name')
         }),
         ('Permissions', {
-            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions','role')
         }),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
@@ -30,7 +30,7 @@ class CustomUserAdmin(UserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2', 'is_staff', 'is_superuser'),
+            'fields': ('email', 'password1', 'password2', 'is_staff', 'is_superuser','role'),
         }),
     )
 

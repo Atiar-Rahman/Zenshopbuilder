@@ -10,7 +10,7 @@ class CategorySerializer(serializers.ModelSerializer):
         required=False
     )
     parent = serializers.SerializerMethodField(read_only=True)
-
+    image = serializers.ImageField(required=False, allow_null=True)
     class Meta:
         model = Category
         fields = [
@@ -131,6 +131,7 @@ class TagSerializer(serializers.ModelSerializer):
         )
 
 class ProductVersionImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False, allow_null=True)
     class Meta:
         model = ProductVersionImage
         fields = ['id','product_version','image','caption','created_at','created_by','is_deleted','deleted_at']
@@ -182,6 +183,7 @@ class ProductVersionSerializer(serializers.ModelSerializer):
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False, allow_null=True)
     class Meta:
         model = ProductImage
         fields = ['id', 'product', 'image', 'is_main', 'is_deleted', 'created_by', 'deleted_by', 'deleted_at']
@@ -213,7 +215,8 @@ class ProductSerializer(serializers.ModelSerializer):
 class ProductDetailSerializer(serializers.ModelSerializer):
     product_image = ProductImageSerializer(source = 'images' ,many=True, read_only=True)
     product_version = ProductVersionSerializer(source='versions',many=True, read_only=True)
-
+    thumbnail = serializers.ImageField(required=False, allow_null=True)
+    
     tech_stack = serializers.PrimaryKeyRelatedField(
         queryset=TechStack.objects.filter(is_deleted=False),
         many=True,

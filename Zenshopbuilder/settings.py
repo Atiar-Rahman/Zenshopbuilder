@@ -1,6 +1,6 @@
 import os
 from decouple import config
-
+import cloudinary
 from pathlib import Path
 from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -14,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['.vercel.app', '127.0.0.1']
 
@@ -41,7 +41,9 @@ INSTALLED_APPS = [
     'orders',
     'django_filters',
     'reviews',
-    'interactions'
+    'interactions',
+    'cloudinary',
+    'cloudinary_storage',
 ]
 
 MIDDLEWARE = [
@@ -98,7 +100,15 @@ DATABASES = {
         'PORT': config('port')
     }
 }
+#configuring for cloudinary storage
 
+cloudinary.config(
+    cloud_name=config('cloud_name'),
+    api_key=config('cloudinary_api_key'),
+    api_secret=config('api_secret')
+)
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 
 STATIC_ROOT = BASE_DIR / "staticfiles"

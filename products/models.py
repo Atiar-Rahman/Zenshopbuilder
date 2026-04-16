@@ -7,6 +7,7 @@ from users.models import Company
 from core.models import SoftDeleteModel
 from django.db import IntegrityError
 from django.db.models import Avg,Count
+from cloudinary.models import CloudinaryField
 
 class Category(SoftDeleteModel):
 
@@ -22,7 +23,7 @@ class Category(SoftDeleteModel):
     )
 
     description = models.TextField(blank=True, null=True)
-    image = models.ImageField(upload_to='categories/', blank=True, null=True)
+    image = CloudinaryField('image', blank=True, null=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -97,7 +98,7 @@ class Product(SoftDeleteModel):
     short_description = models.CharField(max_length=300, blank=True)
     description = models.TextField(blank=True, null=True)
 
-    thumbnail = models.ImageField(upload_to='products/thumbnails/', null=True, blank=True)
+    thumbnail = CloudinaryField('image',null=True, blank=True)
 
     live_preview_url = models.URLField(blank=True, null=True)
     tech_stack = models.ManyToManyField(
@@ -231,7 +232,7 @@ class ProductVersionImage(SoftDeleteModel):
         on_delete=models.CASCADE,
         related_name='version_images'
     )
-    image = models.ImageField(upload_to='products/versions/')
+    image = CloudinaryField('image',null=True, blank=True)
     caption = models.CharField(max_length=100)
 
     def __str__(self):
@@ -247,7 +248,7 @@ class ProductImage(SoftDeleteModel):
         related_name='images'
     )
 
-    image = models.ImageField(upload_to='products/images/')
+    image = CloudinaryField('image', null=True, blank=True)
     is_main = models.BooleanField(default=False)
 
 

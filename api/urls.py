@@ -1,13 +1,12 @@
 from django.urls import path,include
 from rest_framework_nested import routers
-from users.views import CompanyViewset,UserProfileViewset,ProfileViewSet
+from users.views import CompanyViewset,ProfileViewSet
 from products.views import CategoryViewSet,TachStackViewSet,TagViewSet,ProductViewSet,ProductVersionViewSet,ProductImageViewSet, ProductVersionImageViewSet,RestoreCategoryViewSet,RestoreTeckStackViewSet,RestoreTagViewSet,RestoreProductViewSet,RestoreProductImageViewSet,RestoreProductVersionImageViewSet,RestoreProductVersionViewSet, ProductDetailViewSet
 from orders.views import CartViewSet, CartItemViewSet,OrderViewSet
 from reviews.views import ReviewViewSet
 
 router = routers.DefaultRouter()
 router.register('companies',CompanyViewset, basename='companies')
-router.register('profile',UserProfileViewset,basename='profile')
 router.register('category',CategoryViewSet, basename='category')
 router.register('category-restore',RestoreCategoryViewSet,basename='restore-category')
 router.register('products',ProductViewSet,basename='products')
@@ -26,6 +25,8 @@ router.register('orders',OrderViewSet, basename='orders')
 # Nested router
 companies_router = routers.NestedDefaultRouter(router, 'companies', lookup='company')
 companies_router.register('employees', ProfileViewSet, basename='company-employees')
+companies_router.register('profile',ProfileViewSet,basename='profile')
+
 categories_router = routers.NestedDefaultRouter(router,'category',lookup='category')
 categories_router.register('products',ProductDetailViewSet,basename='products')
 

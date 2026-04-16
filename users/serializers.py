@@ -15,7 +15,7 @@ class UserCreateSerializer(BaseUserCreateSerializer):
 
 class UserSerializer(BaseUserSerializer):
     class Meta(BaseUserSerializer.Meta):
-        fields = ['id','email','first_name','last_name','role']
+        fields = ['id','email','first_name','last_name','role','is_staff']
         read_only_fields=['role','email']
 
         def update(self, instance, validated_data):
@@ -35,13 +35,20 @@ class CompanySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class UserProfoleSerializer(serializers.ModelSerializer):
+class UserProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
-    company = CompanySerializer(read_only=True)
+    company = serializers.PrimaryKeyRelatedField(
+    queryset=Company.objects.all()
+    )
+    profile_image = serializers.ImageField(required=False, allow_null=True)
+
     class Meta:
         model = Profile
-        fields = ['id','user','company', 'profile_image','bio','gender','present_address','permanent_address','city','country']
-
+        fields = [
+            'id','user','company','profile_image','bio',
+            'gender','present_address','permanent_address',
+            'city','country'
+        ]
         read_only_fields = ['user','company']
 
 
