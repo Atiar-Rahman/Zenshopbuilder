@@ -3,6 +3,8 @@ from orders.models import Cart,CartItem,Order,OrderItem,Address
 from products.models import ProductVersion, Product
 from users.models import Company
 from orders.services import OrderService
+from rest_framework.exceptions import PermissionDenied
+
 
 class SimpleCompanySerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,14 +23,14 @@ class SimpleVersionSerializer(serializers.ModelSerializer):
         fields = ['id','version','license_type','price']
 
 
-class AddCartItemSerialzer(serializers.ModelSerializer):
+class AddCartItemSerializer(serializers.ModelSerializer):
 
     product = serializers.PrimaryKeyRelatedField(
-        queryset=Product.objects.all(),
+        queryset=Product.active_objects.all(),
     )
 
     product_version = serializers.PrimaryKeyRelatedField(
-        queryset=ProductVersion.objects.all(),
+        queryset=ProductVersion.active_objects.all(),
     )
 
     class Meta:
@@ -53,10 +55,19 @@ class AddCartItemSerialzer(serializers.ModelSerializer):
     # CREATE / UPDATE OPTIMIZED
     def save(self, **kwargs):
         cart_id = self.context.get('cart_id')
+        user = self.context.get('user')
+
+        #  Ownership check
+        try:
+            cart = Cart.objects.get(id=cart_id, user=user)
+        except Cart.DoesNotExist:
+            raise PermissionDenied("Invalid cart or you don't have permission")
 
         product = self.validated_data['product']
         version = self.validated_data['product_version']
         quantity = self.validated_data['quantity']
+
+
 
         cart_item, created = CartItem.objects.get_or_create(
             cart_id=cart_id,
@@ -158,7 +169,15 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         print("\n CREATE ORDER START")
 
         user_id = self.context.get('user_id')
+        cart_id = validated_data.get('cart_id')
+        user = self.context.get('user')
         # print(" User ID:", user_id)
+        #  Ownership check
+        try:
+            cart = Cart.objects.get(id=cart_id, user=user)
+        except Cart.DoesNotExist:
+            raise PermissionDenied("Invalid cart or you don't have permission")
+
 
         try:
             order = OrderService.create_order(user_id=user_id,validated_data=validated_data)

@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
 class ReviewViewSet(ModelViewSet):
+    """Review delete only admin user other operation create, get, patch, put only authenticated user"""
     serializer_class = ReviewSerializer
     queryset = Review.objects.all()
 

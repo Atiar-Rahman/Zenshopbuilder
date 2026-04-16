@@ -22,8 +22,9 @@ class ProductService:
         )
 
         obj, created = RecentlyViewed.objects.get_or_create(
-            product=product
-        )
+             user=user,
+             product=product
+             )
 
         if not created:
             obj.view_count += 1

@@ -61,6 +61,7 @@ class SoftDeleteRestoreMixin:
     
     @action(detail=True, methods=['get','delete'])
     def hard_delete(self, request, slug=None):
+        """Harddelete only admin user"""
         instance = self.get_object()
 
         if instance.products.exists():
@@ -73,14 +74,19 @@ class SoftDeleteRestoreMixin:
 
 
 class CategoryViewSet(SoftDeleteMixin, ModelViewSet):
+    """Category get any user but others operation authention and admin user"""
     # use active_objects manager for listing
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend,SearchFilter,OrderingFilter]
     filterset_fields = ['name','is_active']
     search_fields = ['name']
     ordering_fields = ['created_at','is_active']
     lookup_field='slug'
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update','destroy']:
+            return [IsAuthenticated(), IsAdminUser()]
+        return [AllowAny()]
 
     def get_serializer_context(self):
         # Pass request for created_by
@@ -91,13 +97,16 @@ class CategoryViewSet(SoftDeleteMixin, ModelViewSet):
     def get_queryset(self):
         user = self.request.user
 
-        if user.role =='is_staff' or user.role=='is_superuser':
+        # If user is authenticated AND admin
+        if user.is_authenticated and (user.is_staff or user.is_superuser):
             return Category.objects.all()
-        
+
+        # Everyone else (including anonymous)
         return Category.active_objects.all()
 
 
 class RestoreCategoryViewSet(SoftDeleteRestoreMixin,ListModelMixin, RetrieveModelMixin, UpdateModelMixin, GenericViewSet):
+    """Restore Category only admin user"""
     http_method_names = ['get','delete']
     queryset = Category.deleted_objects.all()
     serializer_class = CategorySerializer
@@ -105,7 +114,8 @@ class RestoreCategoryViewSet(SoftDeleteRestoreMixin,ListModelMixin, RetrieveMode
     permission_classes = [IsAdminUser]
 
     
-class TachStackViewSet(SoftDeleteMixin, ModelViewSet):
+class TechStackViewSet(SoftDeleteMixin, ModelViewSet):
+    """techstack get any user but other operation authenticated and admin user"""
     queryset = TechStack.active_objects.all()
     serializer_class = TechStackSerializer
     filter_backends = [SearchFilter,OrderingFilter]
@@ -113,9 +123,9 @@ class TachStackViewSet(SoftDeleteMixin, ModelViewSet):
     ordering_fields = ['created_at']
 
     def get_permissions(self):
-        if self.request.method == 'GET':
-            return [IsAuthenticated()]
-        return [IsAdminUser()]
+        if self.action in ['create', 'update', 'partial_update','destroy']:
+            return [IsAuthenticated(), IsAdminUser()]
+        return [AllowAny()]
 
     def get_serializer_context(self):
         # Pass request for created_by
@@ -124,7 +134,7 @@ class TachStackViewSet(SoftDeleteMixin, ModelViewSet):
         return context
 
 class RestoreTeckStackViewSet(SoftDeleteRestoreMixin, ModelViewSet):
-    """TachStack Restore must be AdminUser"""
+    """TechStack Restore must be AdminUser"""
     http_method_names=['get']
     queryset = TechStack.deleted_objects.all()
     serializer_class = TechStackSerializer
@@ -134,7 +144,7 @@ class RestoreTeckStackViewSet(SoftDeleteRestoreMixin, ModelViewSet):
 
     
 class TagViewSet(SoftDeleteMixin, ModelViewSet):
-    """Tag crud operation by authenticated user"""
+    """Tag get any user but others operation only authenticated, admin user"""
     queryset = Tag.active_objects.all()
     serializer_class = TagSerializer
     filter_backends = [SearchFilter,OrderingFilter]
@@ -144,8 +154,8 @@ class TagViewSet(SoftDeleteMixin, ModelViewSet):
     
     def get_permissions(self):
         if self.request.method == 'GET':
-            return [IsAuthenticated()]
-        return [IsAdminUser()]
+            return [AllowAny()]
+        return [IsAuthenticated(),IsAdminUser()]
 
     def get_serializer_context(self):
         # Pass request for created_by
@@ -162,6 +172,7 @@ class RestoreTagViewSet(SoftDeleteRestoreMixin,ModelViewSet):
     
 
 class ProductViewSet(ListModelMixin,RetrieveModelMixin, GenericViewSet):
+    """product show any user not restrict"""
     queryset = Product.active_objects.select_related('category').annotate(
         min_price=Min('versions__price'),
         max_price =Max('versions__price')
@@ -212,6 +223,7 @@ class ProductViewSet(ListModelMixin,RetrieveModelMixin, GenericViewSet):
     
 
 class ProductDetailViewSet(SoftDeleteMixin, ModelViewSet):
+    """any user get others operation only authenticated admin user"""
     lookup_field = 'slug'
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -269,7 +281,7 @@ class RestoreProductViewSet(SoftDeleteRestoreMixin, ModelViewSet):
   
     
 class ProductVersionViewSet(SoftDeleteMixin, ModelViewSet):
-    """Product Version show only authenticated user others operation only adminuser"""
+    """Product Version show Any user others operation only adminuser"""
     queryset = ProductVersion.active_objects.all()
     serializer_class = ProductVersionSerializer
     parser_classes = (MultiPartParser, FormParser)
@@ -282,7 +294,7 @@ class ProductVersionViewSet(SoftDeleteMixin, ModelViewSet):
 
     def get_permissions(self):
         if self.request.method == 'GET':
-            return [IsAuthenticated()]
+            return [AllowAny()]
         return [IsAdminUser()]
 
     def get_serializer_context(self):
@@ -307,13 +319,13 @@ class RestoreProductVersionViewSet(SoftDeleteRestoreMixin, ModelViewSet):
     
 
 class ProductImageViewSet(SoftDeleteMixin, ModelViewSet):
-    """Product Image get only authenticated user others operation adminuser"""
+    """Product Image get any user others operation adminuser"""
     queryset = ProductImage.active_objects.all()
     serializer_class = ProductImageSerializer
 
     def get_permissions(self):
         if self.request.method == 'GET':
-            return [IsAuthenticated()]
+            return [AllowAny()]
         return [IsAdminUser()]
     
     def get_serializer_context(self):
@@ -344,7 +356,7 @@ class ProductVersionImageViewSet(SoftDeleteMixin, ModelViewSet):
 
     def get_permissions(self):
         if self.request.method == 'GET':
-            return [IsAuthenticated()]
+            return [AllowAny()]
         return [IsAdminUser()]
 
     
@@ -370,6 +382,7 @@ class RestoreProductVersionImageViewSet(SoftDeleteRestoreMixin, ModelViewSet):
 
 
 class ProductCompareViewSet(ModelViewSet):
+    """Two or product select and compare the prodct get Response any user"""
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     http_method_names = ['get','post']

@@ -1,7 +1,7 @@
 from rest_framework.mixins import CreateModelMixin,RetrieveModelMixin,DestroyModelMixin
 from rest_framework.viewsets import GenericViewSet,ModelViewSet
 from orders.models import Cart, CartItem,Order,OrderItem
-from orders.serializers import CartSerializer, CartItemSerializer, AddCartItemSerialzer, UpdateCartItemSerializer, OrderSerializer,CreateOrderSerializer,UpdateOrderSerializer
+from orders.serializers import CartSerializer, CartItemSerializer, AddCartItemSerializer, UpdateCartItemSerializer, OrderSerializer,CreateOrderSerializer,UpdateOrderSerializer
 from rest_framework.permissions import IsAuthenticated,IsAdminUser
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter,OrderingFilter
@@ -9,7 +9,7 @@ from products.paginations import CustomPagination
 
 
 class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
-    
+    """Cart created only authenticated user"""
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated]
 
@@ -25,6 +25,7 @@ class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, Gener
 
     
 class CartItemViewSet(ModelViewSet):
+    """CartItem add, delete, update, partialup only authenticated user from owner cart """
     permission_classes = [IsAuthenticated]
     http_method_names = ['get', 'post', 'patch', 'delete']
     filter_backends = [DjangoFilterBackend]
@@ -32,7 +33,7 @@ class CartItemViewSet(ModelViewSet):
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
-            return AddCartItemSerialzer
+            return AddCartItemSerializer
         elif self.request.method == 'PATCH':
             return UpdateCartItemSerializer
         return CartItemSerializer
@@ -40,17 +41,19 @@ class CartItemViewSet(ModelViewSet):
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context['cart_id'] = self.kwargs.get('cart_pk')
+        context['user'] = self.request.user
 
         return context
 
     def get_queryset(self):
-        return CartItem.objects.select_related('product').filter(cart_id=self.kwargs.get('cart_pk'))
+        return CartItem.objects.select_related('product').filter( cart_id=self.kwargs.get('cart_pk'),cart__user = self.request.user)
     
 
 
 
 # order viewset
 class OrderViewSet(ModelViewSet):
+    """Order only cartItem must be owner cart only authenticated user"""
     serializer_class = OrderSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
 
@@ -71,7 +74,7 @@ class OrderViewSet(ModelViewSet):
     
     def get_permissions(self):
         if self.request.method == 'DELETE':
-            return [IsAdminUser()]
+            return [IsAuthenticated(),IsAdminUser()]
         return [IsAuthenticated()]
 
     def get_serializer_context(self):

@@ -1,7 +1,7 @@
 from django.urls import path,include
 from rest_framework_nested import routers
 from users.views import CompanyViewset,ProfileViewSet
-from products.views import CategoryViewSet,TachStackViewSet,TagViewSet,ProductViewSet,ProductVersionViewSet,ProductImageViewSet, ProductVersionImageViewSet,RestoreCategoryViewSet,RestoreTeckStackViewSet,RestoreTagViewSet,RestoreProductViewSet,RestoreProductImageViewSet,RestoreProductVersionImageViewSet,RestoreProductVersionViewSet, ProductDetailViewSet,ProductCompareViewSet
+from products.views import CategoryViewSet,TechStackViewSet,TagViewSet,ProductViewSet,ProductVersionViewSet,ProductImageViewSet, ProductVersionImageViewSet,RestoreCategoryViewSet,RestoreTeckStackViewSet,RestoreTagViewSet,RestoreProductViewSet,RestoreProductImageViewSet,RestoreProductVersionImageViewSet,RestoreProductVersionViewSet, ProductDetailViewSet,ProductCompareViewSet
 from orders.views import CartViewSet, CartItemViewSet,OrderViewSet
 from reviews.views import ReviewViewSet
 from interactions.views import HistoryViewSet
@@ -12,8 +12,8 @@ router.register('category',CategoryViewSet, basename='category')
 router.register('category-restore',RestoreCategoryViewSet,basename='restore-category')
 router.register('products',ProductViewSet,basename='products')
 router.register('product-compare',ProductCompareViewSet, basename='product-compare')
-router.register('tachstack',TachStackViewSet,basename='tach-stack')
-router.register('tachstack-restore',RestoreTeckStackViewSet,basename='restore-techstack')
+router.register('techstack',TechStackViewSet,basename='tech-stack')
+router.register('techstack-restore',RestoreTeckStackViewSet,basename='restore-techstack')
 router.register('tag',TagViewSet,basename='tag')
 router.register('tag-restore', RestoreTagViewSet, basename='restore-tag')
 router.register('product-restore', RestoreProductViewSet, basename='restore-product')

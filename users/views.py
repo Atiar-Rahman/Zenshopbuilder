@@ -5,21 +5,26 @@ from users.serializers import CompanySerializer,UserProfileSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 # Create your views here.
 from rest_framework.parsers import MultiPartParser, FormParser
-
+from rest_framework.permissions import IsAdminUser,IsAuthenticated
     
 
 class CompanyViewset(ModelViewSet):
+    """Company created only authenticated admin user"""
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['name','email','address']
+    permission_classes = [IsAuthenticated,IsAdminUser]
+
 
 
 
 
 class ProfileViewSet(ModelViewSet):
+    """Employee profle create only authenticated user"""
     serializer_class = UserProfileSerializer
     parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
