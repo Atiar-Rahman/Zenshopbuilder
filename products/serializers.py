@@ -275,3 +275,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'
+
+
+
+class ProductCompareSerializer(serializers.Serializer):
+    product_ids = serializers.ListField(
+        child  = serializers.UUIDField()
+    )
+
+    

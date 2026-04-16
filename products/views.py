@@ -2,7 +2,7 @@
 from rest_framework.viewsets import ModelViewSet,GenericViewSet
 from rest_framework.permissions import IsAuthenticated
 from products.models import Category,ProductImage,TechStack,Tag,Product,ProductVersion,ProductVersionImage
-from products.serializers import CategorySerializer,TechStackSerializer,TagSerializer,ProductSerializer, ProductVersionSerializer,ProductImageSerializer,ProductVersionImageSerializer, ProductDetailSerializer,ProductWriteSerializer
+from products.serializers import CategorySerializer,TechStackSerializer,TagSerializer,ProductSerializer, ProductVersionSerializer,ProductImageSerializer,ProductVersionImageSerializer, ProductDetailSerializer,ProductWriteSerializer,ProductCompareSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import status
@@ -16,6 +16,8 @@ from products.paginations import CustomPagination
 from interactions.services import ProductService
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.db.models import Prefetch
+
 
 class SoftDeleteMixin:
     """Reusable mixin for soft delete & restore"""
@@ -364,3 +366,142 @@ class RestoreProductVersionImageViewSet(SoftDeleteRestoreMixin, ModelViewSet):
     serializer_class = ProductVersionImageSerializer
     permission_classes = [IsAdminUser]  
 
+
+
+class ProductCompareViewSet(ModelViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    http_method_names = ['get','post']
+
+    @action(detail=False, methods=["post"])
+    def compare(self, request):
+        product_ids = request.data.get("product_ids", [])
+
+        if not product_ids:
+            return Response(
+                {"error": "product_ids is required"},
+                status=400
+            )
+
+        #  optimized query (no N+1)
+        products = Product.objects.filter(
+            id__in=product_ids,
+            is_active=True
+        ).select_related(
+            'category'
+        ).prefetch_related(
+            'tech_stack',
+            'tags',
+            Prefetch(
+                'versions',
+                queryset=ProductVersion.objects.filter(
+                    is_active=True
+                ).order_by('-created_at')
+            )
+        )
+
+        if not products.exists():
+            return Response(
+                {"error": "No products found"},
+                status=404
+            )
+
+        compare_response = {
+            "fields": [
+                "name",
+                "category",
+                "latest_version",
+                "price",
+                "discount_price",
+                "license_type",
+                "rating",
+                "total_sales",
+                "tech_stack",
+                "tags"
+            ],
+            "products": [],
+            "highlight": {
+                "cheapest": None,
+                "highest_rated": None,
+                "best_selling": None
+            }
+        }
+
+        #  tracking variables (with product reference)
+        cheapest_price = None
+        cheapest_product = None
+
+        highest_rating = 0
+        highest_rated_product = None
+
+        best_selling = 0
+        best_selling_product = None
+
+        for p in products:
+
+            # safe latest version
+            latest_version = p.versions.first()
+
+            price = latest_version.price if latest_version else None
+            discount_price = latest_version.discount_price if latest_version else None
+            license_type = latest_version.license_type if latest_version else None
+            version_name = latest_version.version if latest_version else None
+
+            rating = p.rating or 0
+            sales = p.total_sales or 0
+
+            #  cheapest
+            if price is not None:
+                if cheapest_price is None or price < cheapest_price:
+                    cheapest_price = price
+                    cheapest_product = p.id
+
+            #  highest rating
+            if rating > highest_rating:
+                highest_rating = rating
+                highest_rated_product = p.id
+
+            #  best selling
+            if sales > best_selling:
+                best_selling = sales
+                best_selling_product = p.id
+
+            compare_response["products"].append({
+                "id": p.id,
+                "name": p.name,
+                "category": p.category.name if p.category else None,
+
+                # version data
+                "latest_version": version_name,
+                "price": price,
+                "discount_price": discount_price,
+                "license_type": license_type,
+
+                # product data
+                "rating": rating,
+                "total_sales": sales,
+                "total_views": p.total_views,
+
+                "thumbnail": p.thumbnail.url if p.thumbnail else None,
+
+                "tech_stack": [t.name for t in p.tech_stack.all()],
+                "tags": [t.name for t in p.tags.all()],
+            })
+
+        #  final highlight (REAL compare output)
+        compare_response["highlight"] = {
+            "cheapest": {
+                "product_id": cheapest_product,
+                "price": cheapest_price
+            },
+            "highest_rated": {
+                "product_id": highest_rated_product,
+                "value": highest_rating
+            },
+            "best_selling": {
+                "product_id": best_selling_product,
+                "value": best_selling
+            }
+        }
+
+        return Response(compare_response)
