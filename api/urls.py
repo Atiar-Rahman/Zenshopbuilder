@@ -4,6 +4,7 @@ from users.views import CompanyViewset,ProfileViewSet
 from products.views import CategoryViewSet,TachStackViewSet,TagViewSet,ProductViewSet,ProductVersionViewSet,ProductImageViewSet, ProductVersionImageViewSet,RestoreCategoryViewSet,RestoreTeckStackViewSet,RestoreTagViewSet,RestoreProductViewSet,RestoreProductImageViewSet,RestoreProductVersionImageViewSet,RestoreProductVersionViewSet, ProductDetailViewSet,ProductCompareViewSet
 from orders.views import CartViewSet, CartItemViewSet,OrderViewSet
 from reviews.views import ReviewViewSet
+from interactions.views import HistoryViewSet
 
 router = routers.DefaultRouter()
 router.register('companies',CompanyViewset, basename='companies')
@@ -21,6 +22,7 @@ router.register('product-image-restore', RestoreProductImageViewSet, basename='r
 router.register('version-image-restore', RestoreProductVersionImageViewSet, basename='restore-version-image')
 router.register('carts', CartViewSet, basename='carts')
 router.register('orders',OrderViewSet, basename='orders')
+router.register('histories',HistoryViewSet,basename='hostory')
 
 
 # Nested router

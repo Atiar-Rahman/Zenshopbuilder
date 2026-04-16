@@ -180,10 +180,10 @@ class ProductViewSet(ListModelMixin,RetrieveModelMixin, GenericViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         product = self.get_object()
-
+        print(product)
         if request.user.is_authenticated:
-            ProductService.add_view(product, request.user)
-
+            ProductService.track_view(product,request.user)
+            
         return super().retrieve(request, *args, **kwargs)
     
 
@@ -208,6 +208,7 @@ class ProductViewSet(ListModelMixin,RetrieveModelMixin, GenericViewSet):
             {"message": "Wishlist toggled"},
             status=status.HTTP_200_OK
         )
+    
     
 
 class ProductDetailViewSet(SoftDeleteMixin, ModelViewSet):

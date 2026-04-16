@@ -38,3 +38,15 @@ class Wishlist(models.Model):
     
     class Meta:
         unique_together = ('product','user')
+
+
+class RecentlyViewed(models.Model):
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE,related_name='recently_viewed')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    viewed_at = models.DateTimeField(auto_now_add=True)
+    view_count = models.PositiveIntegerField(default=1)
+    last_viewed_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'product')
+        ordering = ['-viewed_at']

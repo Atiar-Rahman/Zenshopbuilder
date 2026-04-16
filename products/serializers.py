@@ -161,9 +161,9 @@ class ProductVersionSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'version','slug', 'license_type', 'price', 'discount_price',
             'file', 'release_date', 'changelog', 'docs_url', 'download_count',
-            'is_active', 'is_featured', 'is_deleted', 'created_by', 'deleted_by', 'deleted_at','product','version_image'
+            'is_active', 'is_featured','product','version_image'
         ]
-        read_only_fields = ['id','slug','download_count', 'created_by', 'deleted_by', 'deleted_at','version_image']
+        read_only_fields = ['id','slug','download_count','version_image']
 
     def create(self,validated_data):
         request = self.context.get('request')
@@ -283,4 +283,3 @@ class ProductCompareSerializer(serializers.Serializer):
         child  = serializers.UUIDField()
     )
 
-    

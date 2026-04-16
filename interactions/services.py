@@ -1,4 +1,4 @@
-from interactions.models import ProductView,ProductLike, Wishlist
+from interactions.models import ProductView,ProductLike, Wishlist,RecentlyViewed
 from products.models import Product
 from django.db.models import F
 from django.db.models.functions import Greatest
@@ -6,16 +6,28 @@ from django.db.models.functions import Greatest
 
 class ProductService:
     @staticmethod
-    def add_view(product,user):
+    def track_view(product,user):
         obj,created = ProductView.objects.get_or_create(
             product=product,
             user=user
         )
+
         if created:
             Product.objects.filter(id=product.id).update(
                 total_views = F('total_views')+1
             )
-    
+        RecentlyViewed.objects.update_or_create(
+            user=user,
+            product=product
+        )
+
+        obj, created = RecentlyViewed.objects.get_or_create(
+            product=product
+        )
+
+        if not created:
+            obj.view_count += 1
+            obj.save(update_fields=["view_count", "last_viewed_at"])
 
     @staticmethod
     def toggle_like(product, user):
