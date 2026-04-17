@@ -46,6 +46,8 @@ class CartItemViewSet(ModelViewSet):
         return context
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Cart.objects.none()
         return CartItem.objects.select_related('product').filter( cart_id=self.kwargs.get('cart_pk'),cart__user = self.request.user)
     
 

@@ -19,6 +19,7 @@ class SimplePorudctSerializer(serializers.ModelSerializer):
 
 class SimpleVersionSerializer(serializers.ModelSerializer):
     class Meta:
+        ref_name='version'
         model = ProductVersion
         fields = ['id','version','license_type','price']
 
