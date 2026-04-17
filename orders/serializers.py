@@ -72,6 +72,7 @@ class AddCartItemSerializer(serializers.ModelSerializer):
         cart_item, created = CartItem.objects.get_or_create(
             cart_id=cart_id,
             product=product,
+            unit_price =version.price,
             product_version=version,
             defaults={'quantity': quantity}
         )
@@ -109,7 +110,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CartItem
-        fields = ['id','product','product_version','quantity','total_price']
+        fields = ['id','product','product_version','unit_price','quantity','total_price']
 
 
     def get_total_price(self, cart_item:CartItem):
@@ -136,11 +137,28 @@ class AddressSerializer(serializers.ModelSerializer):
         model = Address
         fields = '__all__'
 
+class SimpleVersionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductVersion
+        fields = ['id','version','discount_price']
+
+
 class OrderItemSerializer(serializers.ModelSerializer):
     product = SimplePorudctSerializer()
+    product_version = SimpleVersionSerializer()
     class Meta:
         model = OrderItem
-        fields = ['id','product','quantity','unit_price','version']\
+        fields = [
+            'id',
+            'product',
+            'product_version',
+            'license_type',
+            'quantity',
+            'unit_price',
+            'discount',
+            'tax',
+            'total_price'
+        ]
         
 
 class CreateOrderSerializer(serializers.ModelSerializer):

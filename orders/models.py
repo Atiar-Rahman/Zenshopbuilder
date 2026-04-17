@@ -33,7 +33,7 @@ class CartItem(SoftDeleteModel):
     )
 
     quantity = models.PositiveIntegerField(default=1)
-
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
     
 
     
@@ -180,6 +180,7 @@ class OrderItem(SoftDeleteModel):
     quantity = models.PositiveIntegerField(default=1)
     tax = models.DecimalField(max_digits=12, decimal_places=2,default=0)
 
+    discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_price = models.DecimalField(max_digits=14, decimal_places=2)
 
     
